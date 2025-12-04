@@ -28,6 +28,326 @@ struct ContentView: View {
     @State private var startCol: Int = 0
     @State private var dragAxis: Axis? = nil
 
+    // Win condition configuration
+    enum ExitSide { case left, right, top, bottom }
+    let goalExitSide: ExitSide = .right
+    @State private var hasWon: Bool = false
+    @State private var moveCount: Int = 0
+    @State private var obstacleMoveCount: Int = 0
+
+    private func buildOccupancyGrid(excluding index: Int?) -> [[Bool]] {
+        var grid = Array(repeating: Array(repeating: false, count: cols), count: rows)
+        for (i, car) in cars.enumerated() {
+            if let index = index, i == index { continue }
+            if car.horizontal {
+                for c in car.col..<(car.col + car.length) { grid[car.row][c] = true }
+            } else {
+                for r in car.row..<(car.row + car.length) { grid[r][car.col] = true }
+            }
+        }
+        return grid
+    }
+
+    private func allowedDelta(for car: Car, index: Int, axis: Axis, startRow: Int, startCol: Int, desiredDelta: Int) -> Int {
+        let grid = buildOccupancyGrid(excluding: index)
+        switch axis {
+        case .horizontal:
+            if desiredDelta > 0 {
+                // moving right
+                var maxSteps = 0
+                let startEdge = startCol + car.length - 1
+                var nextCol = startEdge + 1
+                while maxSteps < desiredDelta && nextCol < cols {
+                    if grid[car.row][nextCol] { break }
+                    maxSteps += 1
+                    nextCol += 1
+                }
+                return maxSteps
+            } else if desiredDelta < 0 {
+                // moving left
+                var maxSteps = 0
+                var nextCol = startCol - 1
+                while maxSteps < -desiredDelta && nextCol >= 0 {
+                    if grid[car.row][nextCol] { break }
+                    maxSteps += 1
+                    nextCol -= 1
+                }
+                return -maxSteps
+            } else {
+                return 0
+            }
+        case .vertical:
+            if desiredDelta > 0 {
+                // moving down
+                var maxSteps = 0
+                let startEdge = startRow + car.length - 1
+                var nextRow = startEdge + 1
+                while maxSteps < desiredDelta && nextRow < rows {
+                    if grid[nextRow][car.col] { break }
+                    maxSteps += 1
+                    nextRow += 1
+                }
+                return maxSteps
+            } else if desiredDelta < 0 {
+                // moving up
+                var maxSteps = 0
+                var nextRow = startRow - 1
+                while maxSteps < -desiredDelta && nextRow >= 0 {
+                    if grid[nextRow][car.col] { break }
+                    maxSteps += 1
+                    nextRow -= 1
+                }
+                return -maxSteps
+            } else {
+                return 0
+            }
+        }
+    }
+
+    // MARK: - Puzzle evaluation helpers
+
+    private func buildGrid(for cars: [Car], excluding index: Int?) -> [[Bool]] {
+        var grid = Array(repeating: Array(repeating: false, count: cols), count: rows)
+        for (i, car) in cars.enumerated() {
+            if let index = index, i == index { continue }
+            if car.horizontal {
+                for c in car.col..<(car.col + car.length) { grid[car.row][c] = true }
+            } else {
+                for r in car.row..<(car.row + car.length) { grid[r][car.col] = true }
+            }
+        }
+        return grid
+    }
+
+    private func allowedDeltaInState(for cars: [Car], index: Int, axis: Axis, startRow: Int, startCol: Int, desiredDelta: Int) -> Int {
+        let car = cars[index]
+        let grid = buildGrid(for: cars, excluding: index)
+        switch axis {
+        case .horizontal:
+            if desiredDelta > 0 {
+                var maxSteps = 0
+                let startEdge = startCol + car.length - 1
+                var nextCol = startEdge + 1
+                while maxSteps < desiredDelta && nextCol < cols {
+                    if grid[car.row][nextCol] { break }
+                    maxSteps += 1
+                    nextCol += 1
+                }
+                return maxSteps
+            } else if desiredDelta < 0 {
+                var maxSteps = 0
+                var nextCol = startCol - 1
+                while maxSteps < -desiredDelta && nextCol >= 0 {
+                    if grid[car.row][nextCol] { break }
+                    maxSteps += 1
+                    nextCol -= 1
+                }
+                return -maxSteps
+            } else {
+                return 0
+            }
+        case .vertical:
+            if desiredDelta > 0 {
+                var maxSteps = 0
+                let startEdge = startRow + car.length - 1
+                var nextRow = startEdge + 1
+                while maxSteps < desiredDelta && nextRow < rows {
+                    if grid[nextRow][car.col] { break }
+                    maxSteps += 1
+                    nextRow += 1
+                }
+                return maxSteps
+            } else if desiredDelta < 0 {
+                var maxSteps = 0
+                var nextRow = startRow - 1
+                while maxSteps < -desiredDelta && nextRow >= 0 {
+                    if grid[nextRow][car.col] { break }
+                    maxSteps += 1
+                    nextRow -= 1
+                }
+                return -maxSteps
+            } else {
+                return 0
+            }
+        }
+    }
+
+    private func isGoalState(_ cars: [Car]) -> Bool {
+        guard let goalIndex = cars.firstIndex(where: { $0.isGoal }) else { return false }
+        let goal = cars[goalIndex]
+        switch goalExitSide {
+        case .right:
+            return goal.horizontal && goal.row == rows / 2 && (goal.col + goal.length - 1) == cols - 1
+        case .left:
+            return goal.horizontal && goal.row == rows / 2 && goal.col == 0
+        case .top:
+            return !goal.horizontal && goal.col == cols / 2 && goal.row == 0
+        case .bottom:
+            return !goal.horizontal && goal.col == cols / 2 && (goal.row + goal.length - 1) == rows - 1
+        }
+    }
+
+    private func isTriviallySolvableWithoutObstacles(_ cars: [Car]) -> Bool {
+        guard let goalIndex = cars.firstIndex(where: { $0.isGoal }) else { return false }
+        let goal = cars[goalIndex]
+        switch goalExitSide {
+        case .right:
+            guard goal.horizontal && goal.row == rows / 2 else { return false }
+            let grid = buildGrid(for: cars, excluding: goalIndex)
+            let startC = goal.col + goal.length
+            if startC > cols - 1 { return true }
+            for c in startC..<cols {
+                if grid[goal.row][c] { return false }
+            }
+            return true
+        case .left:
+            guard goal.horizontal && goal.row == rows / 2 else { return false }
+            let grid = buildGrid(for: cars, excluding: goalIndex)
+            let endC = goal.col - 1
+            if endC < 0 { return true }
+            for c in 0...endC {
+                if grid[goal.row][c] { return false }
+            }
+            return true
+        case .top:
+            guard !goal.horizontal && goal.col == cols / 2 else { return false }
+            let grid = buildGrid(for: cars, excluding: goalIndex)
+            let endR = goal.row - 1
+            if endR < 0 { return true }
+            for r in 0...endR {
+                if grid[r][goal.col] { return false }
+            }
+            return true
+        case .bottom:
+            guard !goal.horizontal && goal.col == cols / 2 else { return false }
+            let grid = buildGrid(for: cars, excluding: goalIndex)
+            let startR = goal.row + goal.length
+            if startR > rows - 1 { return true }
+            for r in startR..<rows {
+                if grid[r][goal.col] { return false }
+            }
+            return true
+        }
+    }
+
+    private struct Neighbor {
+        let cars: [Car]
+        let movedGoal: Bool
+    }
+
+    private func neighbors(of cars: [Car]) -> [Neighbor] {
+        var result: [Neighbor] = []
+        for i in cars.indices {
+            let car = cars[i]
+            let axis: Axis = car.horizontal ? .horizontal : .vertical
+            let maxPos = allowedDeltaInState(for: cars, index: i, axis: axis, startRow: car.row, startCol: car.col, desiredDelta: 99)
+            if maxPos > 0 {
+                for step in 1...maxPos {
+                    var next = cars
+                    if axis == .horizontal {
+                        next[i].col += step
+                    } else {
+                        next[i].row += step
+                    }
+                    result.append(Neighbor(cars: next, movedGoal: car.isGoal))
+                }
+            }
+            let maxNeg = allowedDeltaInState(for: cars, index: i, axis: axis, startRow: car.row, startCol: car.col, desiredDelta: -99)
+            if maxNeg < 0 {
+                for step in 1...(-maxNeg) {
+                    var next = cars
+                    if axis == .horizontal {
+                        next[i].col -= step
+                    } else {
+                        next[i].row -= step
+                    }
+                    result.append(Neighbor(cars: next, movedGoal: car.isGoal))
+                }
+            }
+        }
+        return result
+    }
+
+    private func serialize(_ cars: [Car]) -> String {
+        cars.map { "\($0.row),\($0.col)" }.joined(separator: ";")
+    }
+
+    // 0-1 BFS to minimize obstacle moves (goal moves cost 0, obstacle moves cost 1)
+    private func minimalObstacleMovesRequired(for initial: [Car]) -> Int? {
+        let startKey = serialize(initial)
+        var dist: [String: Int] = [startKey: 0]
+        var queue: [String] = [startKey]
+        var head = 0
+        var stateByKey: [String: [Car]] = [startKey: initial]
+
+        while head < queue.count {
+            let key = queue[head]; head += 1
+            guard let state = stateByKey[key] else { continue }
+            if isGoalState(state) {
+                return dist[key]
+            }
+            let currentCost = dist[key] ?? 0
+            for nb in neighbors(of: state) {
+                let nKey = serialize(nb.cars)
+                let add = nb.movedGoal ? 0 : 1
+                let newCost = currentCost + add
+                if let existing = dist[nKey], existing <= newCost { continue }
+                dist[nKey] = newCost
+                stateByKey[nKey] = nb.cars
+                if add == 0 {
+                    queue.insert(nKey, at: head) // push-front for 0-cost edges
+                } else {
+                    queue.append(nKey)
+                }
+            }
+        }
+        return nil
+    }
+
+    //장애물 놓는 공간 설정
+    private func generatePlayableBoard(rows: Int, cols: Int) -> [Car] {
+        var attempts = 0
+        while attempts < 300 {
+            let board = generateRandomBoard(rows: rows, cols: cols)
+            // 최소한의 움직임은 있어야함
+            if isTriviallySolvableWithoutObstacles(board) {
+                attempts += 1
+                continue
+            }
+            // 움직이고서 나갈 수 있어야 함?
+            if let minObstacle = minimalObstacleMovesRequired(for: board), minObstacle >= 1 {
+                return board
+            }
+            attempts += 1
+        }
+        // Fallback
+        return generateRandomBoard(rows: rows, cols: cols)
+    }
+
+    private func checkWinCondition() {
+        guard let goalIndex = cars.firstIndex(where: { $0.isGoal }) else { return }
+        let goal = cars[goalIndex]
+        switch goalExitSide {
+        case .right:
+            // Goal car exits to the right when its tail touches last column (cols - 1)
+            if goal.horizontal && goal.row == rows / 2 && (goal.col + goal.length - 1) == cols - 1 {
+                hasWon = true
+            }
+        case .left:
+            if goal.horizontal && goal.row == rows / 2 && goal.col == 0 {
+                hasWon = true
+            }
+        case .top:
+            if !goal.horizontal && goal.col == cols / 2 && goal.row == 0 {
+                hasWon = true
+            }
+        case .bottom:
+            if !goal.horizontal && goal.col == cols / 2 && (goal.row + goal.length - 1) == rows - 1 {
+                hasWon = true
+            }
+        }
+    }
+
     private func generateRandomBoard(rows: Int, cols: Int) -> [Car] {
         var grid = Array(repeating: Array(repeating: false, count: cols), count: rows)
         var result: [Car] = []
@@ -86,7 +406,7 @@ struct ContentView: View {
             //다시시작 버튼
             HStack {
                 Button("Try Again!") {
-                    let generated = generateRandomBoard(rows: rows, cols: cols)
+                    let generated = generatePlayableBoard(rows: rows, cols: cols)
                     cars = generated
                     //다시 시작할때 조건
                     activeIndex = nil
@@ -94,6 +414,9 @@ struct ContentView: View {
                     dragOffset = .zero
                     startRow = cars.first?.row ?? 0
                     startCol = cars.first?.col ?? 0
+                    hasWon = false
+                    moveCount = 0
+                    obstacleMoveCount = 0
                 }
                 .buttonStyle(.borderedProminent)
                 Spacer()
@@ -128,6 +451,29 @@ struct ContentView: View {
                     }
                     .frame(width: side, height: side)
 
+                    // Exit marker
+                    Group {
+                        switch goalExitSide {
+                        case .right:
+                            // draw a gap/marker on the middle-right edge
+                            let cell = (side - spacing * CGFloat(cols - 1)) / CGFloat(cols)
+                            let contentWidth  = cell * CGFloat(cols) + spacing * CGFloat(cols - 1)
+                            let contentHeight = cell * CGFloat(rows) + spacing * CGFloat(rows - 1)
+                            let gridOriginX = (side - contentWidth)  / 2
+                            let gridOriginY = (side - contentHeight) / 2
+                            let y = gridOriginY + CGFloat(rows / 2) * (cell + spacing)
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(width: spacing * 2, height: cell)
+                                .overlay(
+                                    Capsule().fill(Color.orange).frame(width: spacing * 2, height: cell * 0.6)
+                                )
+                                .position(x: gridOriginX + contentWidth + spacing, y: y + cell/2)
+                        case .left, .top, .bottom:
+                            EmptyView()
+                        }
+                    }
+
                     ForEach(cars.indices, id: \.self) { i in
                         carView(for: cars[i], index: i, cell: cell, origin: CGSize(width: gridOriginX, height: gridOriginY))
                     }
@@ -137,12 +483,33 @@ struct ContentView: View {
             }
         }
         .padding()
+        .alert("휴! 탈출이다", isPresented: $hasWon) {
+            Button("나가기") {
+                let generated = generatePlayableBoard(rows: rows, cols: cols)
+                cars = generated
+                activeIndex = nil
+                dragAxis = nil
+                dragOffset = .zero
+                startRow = cars.first?.row ?? 0
+                startCol = cars.first?.col ?? 0
+                hasWon = false
+                moveCount = 0
+                obstacleMoveCount = 0
+            }
+            Button("닫기", role: .cancel) {}
+        } message: {
+            Text("잠시만요 — 장애물 이동 횟수: \(obstacleMoveCount)")
+        }
         .onAppear {
             if cars.isEmpty {
-                let generated = generateRandomBoard(rows: rows, cols: cols)
+                let generated = generatePlayableBoard(rows: rows, cols: cols)
                 cars = generated
                 startRow = cars.first?.row ?? 0
                 startCol = cars.first?.col ?? 0
+                hasWon = false
+                moveCount = 0
+                obstacleMoveCount = 0
+                checkWinCondition()
             }
         }
     }
@@ -178,6 +545,12 @@ struct ContentView: View {
                             let dx = abs(value.translation.width)
                             let dy = abs(value.translation.height)
                             dragAxis = dx >= dy ? .horizontal : .vertical
+                            // lock axis to car orientation
+                            if cars[index].horizontal {
+                                dragAxis = .horizontal
+                            } else {
+                                dragAxis = .vertical
+                            }
                             startRow = cars[index].row
                             startCol = cars[index].col
                         }
@@ -187,20 +560,26 @@ struct ContentView: View {
                         case .horizontal:
                             var dx = value.translation.width
                             let movedColsFloat = dx / step
-                            let tentativeCol = CGFloat(startCol) + movedColsFloat
+                            let desiredCols = Int((movedColsFloat).rounded())
+                            // limit by board bounds first
                             let minCol = 0
                             let maxCol = cols - car.length
-                            let clampedCol = min(max(tentativeCol, CGFloat(minCol)), CGFloat(maxCol))
-                            dx = (clampedCol - CGFloat(startCol)) * step
+                            let desiredNewCol = min(max(startCol + desiredCols, minCol), maxCol)
+                            let desiredDelta = desiredNewCol - startCol
+                            // limit by collisions
+                            let allowed = allowedDelta(for: cars[index], index: index, axis: .horizontal, startRow: startRow, startCol: startCol, desiredDelta: desiredDelta)
+                            dx = CGFloat(allowed) * step
                             dragOffset = CGSize(width: dx, height: 0)
                         case .vertical:
                             var dy = value.translation.height
                             let movedRowsFloat = dy / step
-                            let tentativeRow = CGFloat(startRow) + movedRowsFloat
+                            let desiredRows = Int((movedRowsFloat).rounded())
                             let minRow = 0
                             let maxRow = rows - car.length
-                            let clampedRow = min(max(tentativeRow, CGFloat(minRow)), CGFloat(maxRow))
-                            dy = (clampedRow - CGFloat(startRow)) * step
+                            let desiredNewRow = min(max(startRow + desiredRows, minRow), maxRow)
+                            let desiredDelta = desiredNewRow - startRow
+                            let allowed = allowedDelta(for: cars[index], index: index, axis: .vertical, startRow: startRow, startCol: startCol, desiredDelta: desiredDelta)
+                            dy = CGFloat(allowed) * step
                             dragOffset = CGSize(width: 0, height: dy)
                         case .none:
                             break
@@ -210,14 +589,29 @@ struct ContentView: View {
                         guard activeIndex == index else { return }
                         let step = cell + spacing
                         if dragAxis == .horizontal {
-                            let movedCols = (dragOffset.width / step).rounded()
-                            let newCol = min(max(startCol + Int(movedCols), 0), cols - car.length)
-                            cars[index].col = newCol
+                            let movedCols = Int((dragOffset.width / step).rounded())
+                            let minCol = 0
+                            let maxCol = cols - car.length
+                            let desiredNewCol = min(max(startCol + movedCols, minCol), maxCol)
+                            let desiredDelta = desiredNewCol - startCol
+                            let allowed = allowedDelta(for: cars[index], index: index, axis: .horizontal, startRow: startRow, startCol: startCol, desiredDelta: desiredDelta)
+                            cars[index].col = startCol + allowed
                         } else if dragAxis == .vertical {
-                            let movedRows = (dragOffset.height / step).rounded()
-                            let newRow = min(max(startRow + Int(movedRows), 0), rows - car.length)
-                            cars[index].row = newRow
+                            let movedRows = Int((dragOffset.height / step).rounded())
+                            let minRow = 0
+                            let maxRow = rows - car.length
+                            let desiredNewRow = min(max(startRow + movedRows, minRow), maxRow)
+                            let desiredDelta = desiredNewRow - startRow
+                            let allowed = allowedDelta(for: cars[index], index: index, axis: .vertical, startRow: startRow, startCol: startCol, desiredDelta: desiredDelta)
+                            cars[index].row = startRow + allowed
                         }
+                        if startRow != cars[index].row || startCol != cars[index].col {
+                            moveCount += 1
+                            if cars[index].isGoal == false {
+                                obstacleMoveCount += 1
+                            }
+                        }
+                        checkWinCondition()
                         startRow = cars[index].row
                         startCol = cars[index].col
                         dragOffset = .zero
@@ -229,3 +623,4 @@ struct ContentView: View {
 }
 
 #Preview { ContentView() }
+
