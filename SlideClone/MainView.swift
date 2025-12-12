@@ -18,9 +18,16 @@ struct MainView: View {
     private let levels: [Level] = (1...30).map { Level(id: $0, title: "출근 \($0)일차") }
 
     var body: some View {
-        NavigationStack {
-            LevelSelectView(levels: levels.reversed())
-                .navigationTitle("Excuse Me!")
+        TabView {
+            NavigationStack {
+                LevelSelectView(levels: levels.reversed())
+                    .navigationTitle("Excuse Me!")
+            }
+            .tabItem { Label("메인", systemImage: "calendar")}
+            SettingsView().tabItem { Label("집", systemImage: "house")}
+            SettingsView().tabItem { Label("상점", systemImage: "c.circle")}
+            SettingsView()
+                .tabItem { Label("설정", systemImage: "gear") }
         }
     }
 }
@@ -31,23 +38,24 @@ struct LevelSelectView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 16) {
+                LazyVStack(spacing: 50) {
                     ForEach(levels) { level in
                         NavigationLink(value: level) {
+                            Color.clear.frame(height: 300)
                             Circle()
-                                .fill(Color.blue.opacity(0.2))
+                                .fill(Color.purple)
                                 .frame(width: 80, height: 80)
                                 .overlay(
                                     Text(level.title)
                                         .font(.headline)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(.white)
                                 )
                         }
                         .id(level.id) // 스크롤 타겟
                     }
                     .padding(.horizontal)
                 }
-                .padding(.vertical, 20)
+                .padding(.vertical)
             }
             .onAppear {
                 // 맨 아래 아이템(마지막 레벨)로 스크롤, 하단 정렬
@@ -66,9 +74,23 @@ struct LevelSelectView: View {
     }
 }
 
+struct SettingsView: View {
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                Image(systemName: "gear")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.secondary)
+                Text("설정 준비 중")
+                    .foregroundStyle(.secondary)
+            }
+            .padding()
+            .navigationTitle("설정")
+        }
+    }
+}
+
 
 #Preview {
     MainView()
 }
-
-   
