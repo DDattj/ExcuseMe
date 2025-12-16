@@ -38,10 +38,10 @@ struct LevelSelectView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
+                //버튼 간격
                 LazyVStack(spacing: 50) {
                     ForEach(levels) { level in
                         NavigationLink(value: level) {
-                            Color.clear.frame(height: 300)
                             Circle()
                                 .fill(Color.purple)
                                 .frame(width: 80, height: 80)
@@ -54,16 +54,18 @@ struct LevelSelectView: View {
                         .id(level.id) // 스크롤 타겟
                     }
                     .padding(.horizontal)
+                    
+                    //하단 여백을 '컨텐츠'로 추가 (탭 바와 간격 확보)
+                    Color.clear
+                        .frame(height: 100)
+                        .id("bottomSpacer")
                 }
                 .padding(.vertical)
             }
             .onAppear {
-                // 맨 아래 아이템(마지막 레벨)로 스크롤, 하단 정렬
-                if let last = levels.last {
-                    DispatchQueue.main.async {
-                        withAnimation {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
+                DispatchQueue.main.async {
+                    withAnimation {
+                        proxy.scrollTo("bottomSpacer", anchor: .bottom)
                     }
                 }
             }
@@ -94,3 +96,4 @@ struct SettingsView: View {
 #Preview {
     MainView()
 }
+
