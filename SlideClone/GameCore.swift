@@ -10,6 +10,7 @@
 import Foundation
 import SwiftUI
 
+// MARK: - 컨텐츠뷰
 struct Car: Hashable {
     var row: Int
     var col: Int
@@ -320,3 +321,5 @@ struct GameCore {
         return result
     }
 }
+
+
