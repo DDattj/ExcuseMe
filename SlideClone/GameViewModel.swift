@@ -12,21 +12,25 @@ final class GameViewModel: ObservableObject {
     let objectWillChange = ObservableObjectPublisher()
     
     private let core: GameCore
+    private let difficulty: Int
     
     @Published var cars: [Car] = []
     @Published var hasWon: Bool = false
     @Published var moveCount: Int = 0
     @Published var obstacleMoveCount: Int = 0
     
-    init(rows: Int, cols: Int, goalExitSide: GameCore.ExitSide) {
+    init(rows: Int, cols: Int, goalExitSide: GameCore.ExitSide, difficulty: Int = 1) {
         // Initialize core first
         let core = GameCore(rows: rows, cols: cols, goalExitSide: goalExitSide)
-        // Prepare initial values without touching self
-        let initialCars = core.generatePlayableBoard()
+        // Clamp difficulty to at least 1
+        let clampedDifficulty = max(1, difficulty)
+        // Prepare initial values
+        let initialCars = core.generatePlayableBoard(difficulty: clampedDifficulty)
         let initialHasWon = core.isGoalState(initialCars)
-        
+
         // Assign stored properties
         self.core = core
+        self.difficulty = clampedDifficulty
         self.cars = initialCars
         self.hasWon = initialHasWon
         self.moveCount = 0
@@ -36,11 +40,10 @@ final class GameViewModel: ObservableObject {
     var goalExitSide: GameCore.ExitSide { core.goalExitSide }
     
     func tryAgain() {
-        cars = core.generatePlayableBoard()
-        hasWon = false
+        cars = core.generatePlayableBoard(difficulty: difficulty)
+        hasWon = core.isGoalState(cars)
         moveCount = 0
         obstacleMoveCount = 0
-        hasWon = core.isGoalState(cars)
     }
     
     func applyMove(from startRow: Int, startCol: Int, to newRow: Int, newCol: Int, isGoal: Bool) {
