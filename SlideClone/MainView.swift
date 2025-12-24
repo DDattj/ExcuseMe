@@ -16,7 +16,7 @@ struct Level: Identifiable, Hashable {
 
 struct MainView: View {
     // 1부터 n라운드까지 오름차순
-    private let levels: [Level] = (1...40).map { Level(id: $0, title: "출근 \($0)일차") }
+    private let levels: [Level] = (1...10).map { Level(id: $0, title: "출근 \($0)일차") }
 
     var body: some View {
         TabView {
@@ -110,8 +110,7 @@ struct LevelSelectView: View {
             }
         }
         .navigationDestination(for: Level.self) { level in
-            //여기에서 난이도 전달
-            ContentView(difficulty: level.id)
+            ContentView()
         }
     }
     
@@ -145,5 +144,4 @@ struct SettingsView: View {
 #Preview {
     MainView()
 }
-
 

@@ -23,13 +23,7 @@ struct ContentView: View {
     let cols = 6 //가로 칸
     let spacing: CGFloat = 3 //칸 사이 간격
 
-    @StateObject private var vm: GameViewModel
-
-    init(difficulty: Int = 1) {
-        _vm = StateObject(
-            wrappedValue: GameViewModel(rows: 6, cols: 6, goalExitSide: .right, difficulty: difficulty)
-        )
-    }
+    @StateObject private var vm = GameViewModel(rows: 6, cols: 6, goalExitSide: .right)
 
     @State private var activeIndex: Int? = nil
     @State private var dragOffset: CGSize = .zero
