@@ -246,11 +246,19 @@ struct GameCore {
     }
 
     // MARK: - 보드 생성
+    //난이도 기반의 보드를 생성하기 위해서
+    func generatePlayableBoard(difficulty: Int) -> [Car] {
+        // 1 이상으로 보정
+        let clamped = max(1, difficulty)
 
-    func generatePlayableBoard() -> [Car] {
+        // 난이도에 따른 파라미터 튜닝
+        let targetMinObstacleMoves = max(1, clamped / 3 + 1) // 난이도 1→1, 4→2, 7→3, 10→4
+        let extraObstacles = clamped / 2                     // 난이도 1→0, 10→5
+        let longCarBias = min(0.6, 0.1 + Double(clamped) * 0.05) // 0.15 ~ 0.6
+        
         var attempts = 0
         while attempts < 300 {
-            let board = generateRandomBoard()
+            let board = generateRandomBoard(extraObstacles: extraObstacles, longCarBias: longCarBias)
 
             if isTriviallySolvableWithoutObstacles(board) {
                 attempts += 1
@@ -258,15 +266,17 @@ struct GameCore {
             }
 
             if let minObstacle = minimalObstacleMovesRequired(for: board),
-               minObstacle >= 1 {
+               minObstacle >= targetMinObstacleMoves {
                 return board
             }
             attempts += 1
         }
-        return generateRandomBoard()
+        // 최악의 경우라도 난이도 파라미터를 반영한 보드를 반환
+        return generateRandomBoard(extraObstacles: extraObstacles, longCarBias: longCarBias)
     }
 
-    private func generateRandomBoard() -> [Car] {
+    // 난이도 파라미터를 반영한 오버로드 버전
+    private func generateRandomBoard(extraObstacles: Int, longCarBias: Double) -> [Car] {
         var grid = Array(repeating: Array(repeating: false, count: cols), count: rows)
         var result: [Car] = []
 
@@ -295,10 +305,14 @@ struct GameCore {
         place(row: goalCar.row, col: goalCar.col, length: goalCar.length, horizontal: goalCar.horizontal)
         result.append(goalCar)
 
-        // 장애물
-        let obstacleCount = max(6, (rows * cols) / 8)
+        // 기본 장애물 수 + 난이도 기반 추가 장애물
+        let baseObstacleCount = max(6, (rows * cols) / 8)
+        let obstacleCount = baseObstacleCount + extraObstacles
+
         for _ in 0..<obstacleCount {
-            let length = Bool.random() ? 2 : 3
+            // 길이 3 비율을 난이도에 따라 증가
+            let useLong = Double.random(in: 0...1) < longCarBias
+            let length = useLong ? 3 : 2
             let horizontal = Bool.random()
 
             if horizontal {
