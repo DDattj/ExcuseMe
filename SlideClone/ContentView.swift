@@ -6,11 +6,13 @@
 
 //게임 화면으로 쓰일 UI 파일
 // 색, 폰트, 레이아웃, 애니메이션: 전부 ContentView에서 수정.
+
 import SwiftUI
 // UI 전용 색 설정
 extension Car {
     var color: Color {
         if isGoal {
+            //내 캐릭터 색 설정
             return .red
         } else {
             return horizontal ? .blue : .green
@@ -22,21 +24,21 @@ struct ContentView: View {
     let rows = 6 //세로 칸
     let cols = 6 //가로 칸
     let spacing: CGFloat = 3 //칸 사이 간격
-
+    
     @StateObject private var vm = GameViewModel(rows: 6, cols: 6, goalExitSide: .right)
-
+    
     @State private var activeIndex: Int? = nil
     @State private var dragOffset: CGSize = .zero
     @State private var startRow: Int = 0
     @State private var startCol: Int = 0
     @State private var dragAxis: Axis? = nil
-
+    
     @State private var isDragging: Bool = false
     @State private var shakePhase: CGFloat = 0
     @State private var lastAllowedDelta: Int = 0
-
+    
     // MARK: - 충돌 계산 (UI 쪽에서 사용하는 그리드)
-
+    
     private func buildOccupancyGrid(excluding index: Int?) -> [[Bool]] {
         var grid = Array(repeating: Array(repeating: false, count: cols), count: rows)
         for (i, car) in vm.cars.enumerated() {
@@ -49,7 +51,7 @@ struct ContentView: View {
         }
         return grid
     }
-
+    
     private func allowedDelta(
         for car: Car,
         index: Int,
@@ -59,7 +61,7 @@ struct ContentView: View {
         desiredDelta: Int
     ) -> Int {
         let grid = buildOccupancyGrid(excluding: index)
-
+        
         switch axis {
         case .horizontal:
             if desiredDelta > 0 {
@@ -86,7 +88,7 @@ struct ContentView: View {
             } else {
                 return 0
             }
-
+            
         case .vertical:
             if desiredDelta > 0 {
                 // 아래
@@ -114,9 +116,9 @@ struct ContentView: View {
             }
         }
     }
-
+    
     // MARK: - View
-
+    
     var body: some View {
         VStack(spacing: 30) {
             //다시시작 버튼
@@ -132,23 +134,23 @@ struct ContentView: View {
                 .buttonStyle(.borderedProminent)
                 Spacer()
             }
-
+            
             GeometryReader { geo in
-
+                
                 let side = min(geo.size.width, geo.size.height) - 8
                 let cell = (side - spacing * CGFloat(cols - 1)) / CGFloat(cols)
-
+                
                 let contentWidth  = cell * CGFloat(cols) + spacing * CGFloat(cols - 1)
                 let contentHeight = cell * CGFloat(rows) + spacing * CGFloat(rows - 1)
-
+                
                 let gridOriginX = (side - contentWidth)  / 2
                 let gridOriginY = (side - contentHeight) / 2
-
+                
                 ZStack(alignment: .topLeading) {
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color.purple.opacity(0.1))
                         .frame(width: side, height: side)
-
+                    
                     VStack(spacing: spacing) {
                         ForEach(0..<rows, id: \.self) { _ in
                             HStack(spacing: spacing) {
@@ -161,7 +163,7 @@ struct ContentView: View {
                         }
                     }
                     .frame(width: side, height: side)
-
+                    
                     // Exit marker
                     Group {
                         switch vm.goalExitSide {
@@ -181,12 +183,12 @@ struct ContentView: View {
                                         .frame(width: spacing * 2, height: cell * 0.6)
                                 )
                                 .position(x: gridOriginX + contentWidth + spacing, y: y + cell/2)
-
+                            
                         case .left, .top, .bottom:
                             EmptyView()
                         }
                     }
-
+                    
                     ForEach(vm.cars.indices, id: \.self) { i in
                         carView(
                             for: vm.cars[i],
@@ -222,211 +224,140 @@ struct ContentView: View {
             }
         }
     }
-
-    // MARK: - Car View + 드래그
-
+    
+    // MARK: - Car View
     func carView(for car: Car, index: Int, cell: CGFloat, origin: CGSize) -> some View {
-
+        
         let width  = car.horizontal
-            ? cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
-            : cell
+        ? cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
+        : cell
         let height = car.horizontal
-            ? cell
-            : cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
-
-        //차 방향이나 기준점 바꾸고 싶을때 손대는 틀
+        ? cell
+        : cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
+        
+        // 기본 위치 (Grid Position)
         let offsetX = origin.width  + CGFloat(car.col) * (cell + spacing)
         let offsetY = origin.height + CGFloat(car.row) * (cell + spacing)
-
+        
+        // 드래그에 의한 이동
+        let currentDragX = (activeIndex == index) ? dragOffset.width : 0
+        let currentDragY = (activeIndex == index) ? dragOffset.height : 0
+        
+        // 흔들림 효과 (sin 함수로 파동 만들기)
+        let shakeX = (activeIndex == index && car.horizontal) ? sin(shakePhase) * 5 : 0
+        let shakeY = (activeIndex == index && !car.horizontal) ? sin(shakePhase) * 5 : 0
+        
         return RoundedRectangle(cornerRadius: 16)
             .fill(car.color)
             .frame(width: width, height: height)
-            .shadow(color: .black.opacity((activeIndex == index && isDragging) ? 0 : 0.2),
-                    radius: 2, x: 0, y: 1)
-            .background(
-                Group {
-                    if activeIndex == index && isDragging {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(car.color)
-                            .padding(-spacing)
-                    }
-                }
-            )
+            .shadow(color: .black.opacity((activeIndex == index && isDragging) ? 0.1 : 0.3),
+                    radius: (activeIndex == index && isDragging) ? 5 : 2,
+                    x: 0, y: (activeIndex == index && isDragging) ? 5 : 2)
             .overlay {
-                if car.isGoal { Text("내 캐릭터").font(.system(size: 20)) }
+                if car.isGoal { Text("★").font(.largeTitle).foregroundColor(.white) }
             }
-            .offset(x: offsetX + (activeIndex == index ? dragOffset.width : 0),
-                    y: offsetY + (activeIndex == index ? dragOffset.height : 0))
-            .scaleEffect(activeIndex == index && isDragging ? 1.03 : 1.0, anchor: .center)
-            .animation(.easeOut(duration: 0.12),
-                       value: activeIndex == index && isDragging)
-            .offset(
-                x: {
-                    if activeIndex == index {
-                        if vm.cars[index].horizontal {
-                            return (dragAxis == .vertical ? sin(shakePhase) * 2 : 0)
-                        } else {
-                            return 0
-                        }
-                    }
-                    return 0
-                }(),
-                y: {
-                    if activeIndex == index {
-                        if !vm.cars[index].horizontal {
-                            return (dragAxis == .horizontal ? sin(shakePhase) * 2 : 0)
-                        } else {
-                            return 0
-                        }
-                    }
-                    return 0
-                }()
-            )
+        // 위치 적용: 기본위치 + 드래그변위 + 흔들림
+            .offset(x: offsetX + currentDragX + shakeX,
+                    y: offsetY + currentDragY + shakeY)
+            .zIndex(activeIndex == index ? 100 : 1)
+        // 애니메이션: 드래그 값 변화에 따라 부드럽게
+            .animation(.spring(response: 0.35, dampingFraction: 0.75), value: dragOffset)
             .gesture(
                 DragGesture()
                     .onChanged { value in
-                        if activeIndex == nil { activeIndex = index }
-                        guard activeIndex == index else { return }
-
-                        if dragAxis == nil {
-                            let dx = abs(value.translation.width)
-                            let dy = abs(value.translation.height)
-                            dragAxis = dx >= dy ? .horizontal : .vertical
-                            // 차 방향으로 잠금
-                            dragAxis = vm.cars[index].horizontal ? .horizontal : .vertical
+                        // 1. 초기화
+                        if activeIndex == nil {
+                            activeIndex = index
                             startRow = vm.cars[index].row
                             startCol = vm.cars[index].col
+                            dragAxis = vm.cars[index].horizontal ? .horizontal : .vertical
+                            isDragging = true
                         }
-
+                        guard activeIndex == index, let axis = dragAxis else { return }
+                        
                         let step = cell + spacing
-
-                        switch dragAxis {
-                        case .horizontal:
-                            var dx = value.translation.width
-                            let movedColsFloat = dx / step
-                            let desiredCols = Int((movedColsFloat).rounded())
-
-                            let minCol = 0
-                            let maxCol = cols - car.length
-                            let desiredNewCol = min(max(startCol + desiredCols, minCol), maxCol)
-                            let desiredDelta = desiredNewCol - startCol
-
-                            let allowed = allowedDelta(
-                                for: vm.cars[index],
-                                index: index,
-                                axis: .horizontal,
-                                startRow: startRow,
-                                startCol: startCol,
-                                desiredDelta: desiredDelta
-                            )
-
-                            lastAllowedDelta = allowed
-
-                            if isDragging == false { isDragging = true }
-
-                            if desiredDelta != 0 && allowed == 0 {
-                                withAnimation(.easeOut(duration: 0.08)) { shakePhase = 6 }
-                                withAnimation(.easeOut(duration: 0.16).delay(0.08)) { shakePhase = 0 }
+                        
+                        // 2. 드래그 거리 -> 칸 수 변환
+                        let translation = axis == .horizontal ? value.translation.width : value.translation.height
+                        let desiredSteps = Int(round(translation / step))
+                        
+                        // 3. 갈 수 있는 거리 계산 (변수명 allowedSteps로 통일)
+                        let allowedSteps = allowedDelta(
+                            for: vm.cars[index],
+                            index: index,
+                            axis: axis,
+                            startRow: startRow,
+                            startCol: startCol,
+                            desiredDelta: desiredSteps
+                        )
+                        
+                        // 4. 드래그 오프셋 적용
+                        if axis == .horizontal {
+                            dragOffset = CGSize(width: CGFloat(allowedSteps) * step, height: 0)
+                        } else {
+                            dragOffset = CGSize(width: 0, height: CGFloat(allowedSteps) * step)
+                        }
+                        
+                        // 5. 충돌 감지 (원하는 거리 > 허용된 거리)
+                        let isBlocked = abs(desiredSteps) > abs(allowedSteps)
+                        
+                        // 6. 흔들림 효과 발동
+                        if isBlocked && shakePhase == 0 {
+                            // 폰 진동
+                            let generator = UIImpactFeedbackGenerator(style: .heavy)
+                            generator.impactOccurred()
+                            
+                            // 화면 진동
+                            withAnimation(.linear(duration: 1)) {
+                                shakePhase = 20
                             }
-
-                            dx = CGFloat(allowed) * step
-                            dragOffset = CGSize(width: dx, height: 0)
-
-                        case .vertical:
-                            var dy = value.translation.height
-                            let movedRowsFloat = dy / step
-                            let desiredRows = Int((movedRowsFloat).rounded())
-
-                            let minRow = 0
-                            let maxRow = rows - car.length
-                            let desiredNewRow = min(max(startRow + desiredRows, minRow), maxRow)
-                            let desiredDelta = desiredNewRow - startRow
-
-                            let allowed = allowedDelta(
-                                for: vm.cars[index],
-                                index: index,
-                                axis: .vertical,
-                                startRow: startRow,
-                                startCol: startCol,
-                                desiredDelta: desiredDelta
-                            )
-
-                            lastAllowedDelta = allowed
-
-                            if isDragging == false { isDragging = true }
-
-                            if desiredDelta != 0 && allowed == 0 {
-                                withAnimation(.easeOut(duration: 0.08)) { shakePhase = 6 }
-                                withAnimation(.easeOut(duration: 0.16).delay(0.08)) { shakePhase = 0 }
+                            
+                            // 진동 끝난 후 초기화
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                var transaction = Transaction()
+                                transaction.disablesAnimations = true
+                                withTransaction(transaction) {
+                                    shakePhase = 0
+                                }
                             }
-
-                            dy = CGFloat(allowed) * step
-                            dragOffset = CGSize(width: 0, height: dy)
-
-                        case .none:
-                            break
                         }
                     }
                     .onEnded { _ in
-                        guard activeIndex == index else { return }
-
+                        guard activeIndex == index, let axis = dragAxis else { return }
+                        
                         let step = cell + spacing
-
-                        if dragAxis == .horizontal {
-                            let movedCols = Int((dragOffset.width / step).rounded())
-                            let minCol = 0
-                            let maxCol = cols - car.length
-                            let desiredNewCol = min(max(startCol + movedCols, minCol), maxCol)
-                            let desiredDelta = desiredNewCol - startCol
-
-                            let allowed = allowedDelta(
-                                for: vm.cars[index],
-                                index: index,
-                                axis: .horizontal,
-                                startRow: startRow,
-                                startCol: startCol,
-                                desiredDelta: desiredDelta
-                            )
-
-                            withAnimation(.spring(response: 0.28, dampingFraction: 0.82, blendDuration: 0.1)) {
-                                vm.cars[index].col = startCol + allowed
+                        
+                        // 최종 이동 확정
+                        let movedSteps = Int(round((axis == .horizontal ? dragOffset.width : dragOffset.height) / step))
+                        
+                        if movedSteps != 0 {
+                            // 모델 업데이트
+                            if axis == .horizontal {
+                                vm.cars[index].col = startCol + movedSteps
+                            } else {
+                                vm.cars[index].row = startRow + movedSteps
                             }
-                            vm.applyMove(from: startRow, startCol: startCol, to: vm.cars[index].row, newCol: vm.cars[index].col, isGoal: vm.cars[index].isGoal)
-                        } else if dragAxis == .vertical {
-                            let movedRows = Int((dragOffset.height / step).rounded())
-                            let minRow = 0
-                            let maxRow = rows - car.length
-                            let desiredNewRow = min(max(startRow + movedRows, minRow), maxRow)
-                            let desiredDelta = desiredNewRow - startRow
-
-                            let allowed = allowedDelta(
-                                for: vm.cars[index],
-                                index: index,
-                                axis: .vertical,
-                                startRow: startRow,
-                                startCol: startCol,
-                                desiredDelta: desiredDelta
-                            )
-
-                            withAnimation(.spring(response: 0.28, dampingFraction: 0.82, blendDuration: 0.1)) {
-                                vm.cars[index].row = startRow + allowed
-                            }
-                            vm.applyMove(from: startRow, startCol: startCol, to: vm.cars[index].row, newCol: vm.cars[index].col, isGoal: vm.cars[index].isGoal)
+                            
+                            // 게임 로직 반영
+                            vm.applyMove(from: startRow, startCol: startCol,
+                                         to: vm.cars[index].row, newCol: vm.cars[index].col,
+                                         isGoal: car.isGoal)
                         }
-
-                        startRow = vm.cars[index].row
-                        startCol = vm.cars[index].col
-                        dragOffset = .zero
-                        dragAxis = nil
-                        activeIndex = nil
-                        isDragging = false
-                        shakePhase = 0
+                        
+                        // 상태 초기화
+                        resetDragState()
                     }
             )
-            .zIndex(activeIndex == index && isDragging ? 10 : 0)
+    }
+    // 초기화 헬퍼 함수
+    func resetDragState() {
+        activeIndex = nil
+        dragOffset = .zero
+        dragAxis = nil
+        isDragging = false
+        shakePhase = 0
     }
 }
-
 #Preview {
     ContentView()
 }
