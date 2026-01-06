@@ -137,8 +137,9 @@ struct ContentView: View {
             
             GeometryReader { geo in
                 
-                let side = min(geo.size.width, geo.size.height) - 8
-                let cell = (side - spacing * CGFloat(cols - 1)) / CGFloat(cols)
+                let rawSide = min(geo.size.width, geo.size.height) - 8
+                let side = max(rawSide, 0)
+                let cell = side > 0 ? (side - spacing * CGFloat(cols - 1)) / CGFloat(cols) : 0
                 
                 let contentWidth  = cell * CGFloat(cols) + spacing * CGFloat(cols - 1)
                 let contentHeight = cell * CGFloat(rows) + spacing * CGFloat(rows - 1)

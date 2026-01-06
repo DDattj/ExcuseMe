@@ -109,8 +109,8 @@ struct LevelSelectView: View {
                 }
             }
         }
-        .navigationDestination(for: Level.self) { level in
-            ContentView()
+        .navigationDestination(for: Level.self) { let vm = GameViewModel(rows: 6, cols: 6, goalExitSide: .right)
+            ContentView(vm: vm)
         }
     }
     

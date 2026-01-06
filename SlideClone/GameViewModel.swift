@@ -12,6 +12,7 @@ final class GameViewModel: ObservableObject {
     let objectWillChange = ObservableObjectPublisher()
     
     private let core: GameCore
+    private var initialCars: [Car] = []
     
     @Published var cars: [Car] = []
     @Published var hasWon: Bool = false
@@ -28,6 +29,7 @@ final class GameViewModel: ObservableObject {
         // Assign stored properties
         self.core = core
         self.cars = initialCars
+        self.initialCars = initialCars //초기상태를 저장한다.
         self.hasWon = initialHasWon
         self.moveCount = 0
         self.obstacleMoveCount = 0
@@ -36,7 +38,7 @@ final class GameViewModel: ObservableObject {
     var goalExitSide: GameCore.ExitSide { core.goalExitSide }
     
     func tryAgain() {
-        cars = core.generatePlayableBoard()
+        cars = initialCars
         hasWon = false
         moveCount = 0
         obstacleMoveCount = 0
