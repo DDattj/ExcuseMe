@@ -10,12 +10,11 @@ import Combine
 
 final class GameViewModel: ObservableObject {
     
-    let objectWillChange = ObservableObjectPublisher()
-    
     private let core: GameCore
-    private var initialCars: [Car] = []
     
-    //현재 레벨을 기억하는 변수 추가
+    //게임 처음 상태 저장
+    private var initialCars: [Car] = []
+    // 현재 레벨을 기억
     private let currentLevel: Int
     
     @Published var cars: [Car] = []
@@ -23,20 +22,20 @@ final class GameViewModel: ObservableObject {
     @Published var moveCount: Int = 0
     @Published var obstacleMoveCount: Int = 0
     
-    //초기화할 때 'level'을 입력받도록 수정
     init(rows: Int, cols: Int, goalExitSide: GameCore.ExitSide, level: Int) {
         let core = GameCore(rows: rows, cols: cols, goalExitSide: goalExitSide)
-        
-        // 들어온 레벨을 기억해둠
         self.currentLevel = level
         
-        //코어에게 레벨 정보를 전달하며 보드 생성 요청
-        let initialCars = core.generatePlayableBoard(level: level)
-        let initialHasWon = core.isGoalState(initialCars)
+        // 1. 코어에게 레벨에 맞는 맵을 만들어달라고 요청
+        let createdCars = core.generatePlayableBoard(level: level)
+        let initialHasWon = core.isGoalState(createdCars)
         
         self.core = core
-        self.cars = initialCars
-        self.initialCars = initialCars // 초기상태를 저장한다.
+        
+        // 2. 만든 맵을 '화면용(cars)'과 '보관용(initialCars)' 두 군데에 담기
+        self.cars = createdCars
+        self.initialCars = createdCars
+        
         self.hasWon = initialHasWon
         self.moveCount = 0
         self.obstacleMoveCount = 0
@@ -44,13 +43,17 @@ final class GameViewModel: ObservableObject {
     
     var goalExitSide: GameCore.ExitSide { core.goalExitSide }
     
+    //다시 시작 기능
     func tryAgain() {
-        // 저장해둔 현재 레벨(currentLevel)로 다시 생성
-        cars = core.generatePlayableBoard(level: currentLevel)
-        initialCars = cars // 초기 상태 업데이트
+        // 처음에 보관해둔 원본(initialCars)을 꺼내서 덮어씌우기
+        cars = initialCars
+        
+        // 점수와 승리 상태도 0으로 되돌림
         hasWon = false
         moveCount = 0
         obstacleMoveCount = 0
+        
+        // 승리 여부 재확인
         hasWon = core.isGoalState(cars)
     }
     
@@ -66,7 +69,6 @@ final class GameViewModel: ObservableObject {
     
     // 뷰에서 이동 가능한지 물어볼 때 사용하는 함수
     func calculateAllowedSteps(index: Int, axis: Axis, startRow: Int, startCol: Int, desiredDelta: Int) -> Int {
-        // GameCore에게 대신 물어보고 결과를 반환
         return core.allowedDeltaInState(
             for: cars,
             index: index,
