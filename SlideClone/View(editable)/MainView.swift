@@ -109,7 +109,8 @@ struct LevelSelectView: View {
                 }
             }
         }
-        .navigationDestination(for: Level.self) { _ in let vm = GameViewModel(rows: 6, cols: 6, goalExitSide: .right)
+        .navigationDestination(for: Level.self) { level in
+            let vm = GameViewModel(rows: 6, cols: 6, goalExitSide: .right, level: level.id)
             ContentView(vm: vm)
         }
     }

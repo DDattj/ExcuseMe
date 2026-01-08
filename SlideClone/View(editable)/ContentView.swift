@@ -41,8 +41,8 @@ struct ContentView: View {
     @State private var isDragging: Bool = false
     @State private var shakePhase: CGFloat = 0
     
-    // MainView에서 vm을 전달받기 위해 init 추가
-    init(vm: GameViewModel = GameViewModel(rows: 6, cols: 6, goalExitSide: .right)) {
+    // MainView에서 vm을 전달받기 위해 init 추가. 여기서 레벨 1은 만약 출력값을 알지 못할 경우 레벨 1로 뽑아달라는 이야기(예비용)
+    init(vm: GameViewModel = GameViewModel(rows: 6, cols: 6, goalExitSide: .right, level: 1)) {
         _vm = StateObject(wrappedValue: vm)
     }
     
