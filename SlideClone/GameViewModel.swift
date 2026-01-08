@@ -1,5 +1,6 @@
-//상태 추가+카운트 로직 변경:
-//점수, 시간 제한, 힌트 수 같은 새로운 상태 → @Published로 추가.
+//Created by 이시안 on 12/5/25.
+
+//GameCore와 UI를 연결하며, 게임 승리 여부(hasWon)와 이동 횟수(moveCount) 등을 관리
 
 
 import SwiftUI
@@ -54,6 +55,19 @@ final class GameViewModel: ObservableObject {
         }
         hasWon = core.isGoalState(cars)
     }
+    
+    //뷰에서 이동 가능한지 물어볼 때 사용하는 함수, 이거 하는 이유는 뷰에서 쓸데없는 계산 안하게 하려고
+        func calculateAllowedSteps(index: Int, axis: Axis, startRow: Int, startCol: Int, desiredDelta: Int) -> Int {
+            //GameCore에게 대신 물어보고 결과를 반환
+            return core.allowedDeltaInState(
+                for: cars,
+                index: index,
+                axis: axis,
+                startRow: startRow,
+                startCol: startCol,
+                desiredDelta: desiredDelta
+            )
+        }
     
     }
 

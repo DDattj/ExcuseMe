@@ -1,23 +1,12 @@
-//
-//  GameCore.swift
-//  SlideClone
-//
 //  Created by 이시안 on 12/5/25.
-//이곳은 게임 로직 담기는 곳
-//보드 생성 규칙, 이동 가능 규칙, 승리 조건 등 “룰”을 바꿀 때 Core를 수정.
 
-// GameCore.swift
+//게임의 규칙, 보드 생성, 승리 판별, 길 찾기 알고리즘 등
+//게임 룰을 바꿀때만 수정
+
 import Foundation
 import SwiftUI
 
 // MARK: - 컨텐츠뷰
-struct Car: Hashable {
-    var row: Int
-    var col: Int
-    var length: Int
-    var horizontal: Bool
-    var isGoal: Bool
-}
 
 struct GameCore {
     enum ExitSide { case left, right, top, bottom }
@@ -41,7 +30,8 @@ struct GameCore {
         return grid
     }
 
-    private func allowedDeltaInState(
+    //게임 룰은 다 여기서 불러오도록
+    func allowedDeltaInState(
         for cars: [Car],
         index: Int,
         axis: Axis,
