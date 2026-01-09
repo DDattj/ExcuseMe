@@ -7,7 +7,7 @@
 
 import XCTest
 
-final class SlideCloneUITestsLaunchTests: XCTestCase {
+final class ExcuseMeUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

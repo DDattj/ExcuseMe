@@ -40,9 +40,9 @@
 			path = ExcuseMeTests;
 			sourceTree = "<group>";
 		};
-		9534CC6F2E8564DC00CFE1E7 /* SlideCloneUITests */ = {
+		9534CC6F2E8564DC00CFE1E7 /* ExcuseMeUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = SlideCloneUITests;
+			path = ExcuseMeUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -77,7 +77,7 @@
 			children = (
 				9534CC572E8564DB00CFE1E7 /* ExcuseMe */,
 				9534CC652E8564DC00CFE1E7 /* ExcuseMeTests */,
-				9534CC6F2E8564DC00CFE1E7 /* SlideCloneUITests */,
+				9534CC6F2E8564DC00CFE1E7 /* ExcuseMeUITests */,
 				9534CC562E8564DB00CFE1E7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -154,7 +154,7 @@
 				9534CC6E2E8564DC00CFE1E7 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				9534CC6F2E8564DC00CFE1E7 /* SlideCloneUITests */,
+				9534CC6F2E8564DC00CFE1E7 /* ExcuseMeUITests */,
 			);
 			name = ExcuseMeUITests;
 			packageProductDependencies = (
