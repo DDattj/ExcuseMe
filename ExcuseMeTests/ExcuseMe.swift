@@ -1,6 +1,6 @@
 //
-//  SlideCloneTests.swift
-//  SlideCloneTests
+//  ExcuseMeTests.swift
+//  ExcuseMeTests
 //
 //  Created by 이시안 on 9/25/25.
 //

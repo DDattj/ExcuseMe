@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  SlideClone
+//  ExcuseMe
 //
 //  Created by 이시안 on 9/25/25.
 

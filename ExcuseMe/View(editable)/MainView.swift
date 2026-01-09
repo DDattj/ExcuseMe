@@ -1,6 +1,6 @@
 //
 //  MainView.swift
-//  SlideClone
+//  ExcuseMe
 //
 //  Created by 이시안 on 12/11/25.
 
@@ -17,6 +17,7 @@ struct Level: Identifiable, Hashable {
 struct MainView: View {
     // 1부터 n라운드까지 오름차순
     private let levels: [Level] = (1...10).map { Level(id: $0, title: "출근 \($0)일차") }
+    
 
     var body: some View {
         TabView {
@@ -24,6 +25,7 @@ struct MainView: View {
                 LevelSelectView(levels: levels.reversed())
                     .navigationTitle("Excuse Me!")
             }
+            //메인에 띄울 네비게이션 창 커스텀
             .tabItem { Label("메인", systemImage: "calendar")}
             SettingsView().tabItem { Label("집", systemImage: "house")}
             SettingsView().tabItem { Label("상점", systemImage: "c.circle")}
@@ -34,7 +36,9 @@ struct MainView: View {
 }
 
 struct LevelSelectView: View {
-    let levels: [Level] // [1, 2, 3, ... 30]
+    let levels: [Level]
+    
+    @State private var clearedLevel: Int = 0
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -70,8 +74,10 @@ struct LevelSelectView: View {
                         let xOffset: CGFloat = shouldCenter ? 0 : direction * magnitude
 
                         NavigationLink(value: level) {
+                            //레벨버튼
                             Circle()
-                                .fill(Color.purple)
+                            //클리어 했을때와 안했을때 색상
+                                .fill(level.id <= clearedLevel ? Color.purple.opacity(0.3) : Color.purple)
                                 .frame(width: 80, height: 80)
                                 .overlay(
                                     Text(level.title)

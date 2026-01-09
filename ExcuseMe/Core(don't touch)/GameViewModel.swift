@@ -1,6 +1,6 @@
 //
 //  GameViewModel.swift
-//  SlideClone
+//  ExcuseMe
 //
 //  Created by 이시안 on 12/5/25.
 //
@@ -80,6 +80,8 @@ final class GameViewModel: ObservableObject {
     
     // 다음 레벨로 넘어가는 함수
         func moveToNextLevel() {
+            //게임 상황을 저장 -> 이미 깬것은 색 바꾸려고
+            GameData.shared.saveClearLevel(currentLevel)
             // 1. 레벨을 1 올리기(기본으로 뽑는 맵이 레벨1)
             currentLevel += 1
             
