@@ -24,9 +24,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		9534CC552E8564DB00CFE1E7 /* SlideClone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SlideClone.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		9534CC622E8564DC00CFE1E7 /* SlideCloneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SlideCloneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		9534CC6C2E8564DC00CFE1E7 /* SlideCloneUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SlideCloneUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9534CC552E8564DB00CFE1E7 /* ExcuseMe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExcuseMe.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9534CC622E8564DC00CFE1E7 /* ExcuseMeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ExcuseMeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9534CC6C2E8564DC00CFE1E7 /* ExcuseMeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ExcuseMeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -85,9 +85,9 @@
 		9534CC562E8564DB00CFE1E7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9534CC552E8564DB00CFE1E7 /* SlideClone.app */,
-				9534CC622E8564DC00CFE1E7 /* SlideCloneTests.xctest */,
-				9534CC6C2E8564DC00CFE1E7 /* SlideCloneUITests.xctest */,
+				9534CC552E8564DB00CFE1E7 /* ExcuseMe.app */,
+				9534CC622E8564DC00CFE1E7 /* ExcuseMeTests.xctest */,
+				9534CC6C2E8564DC00CFE1E7 /* ExcuseMeUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,9 +95,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		9534CC542E8564DB00CFE1E7 /* SlideClone */ = {
+		9534CC542E8564DB00CFE1E7 /* ExcuseMe */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9534CC762E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "SlideClone" */;
+			buildConfigurationList = 9534CC762E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "ExcuseMe" */;
 			buildPhases = (
 				9534CC512E8564DB00CFE1E7 /* Sources */,
 				9534CC522E8564DB00CFE1E7 /* Frameworks */,
@@ -110,16 +110,16 @@
 			fileSystemSynchronizedGroups = (
 				9534CC572E8564DB00CFE1E7 /* SlideClone */,
 			);
-			name = SlideClone;
+			name = ExcuseMe;
 			packageProductDependencies = (
 			);
 			productName = SlideClone;
-			productReference = 9534CC552E8564DB00CFE1E7 /* SlideClone.app */;
+			productReference = 9534CC552E8564DB00CFE1E7 /* ExcuseMe.app */;
 			productType = "com.apple.product-type.application";
 		};
-		9534CC612E8564DC00CFE1E7 /* SlideCloneTests */ = {
+		9534CC612E8564DC00CFE1E7 /* ExcuseMeTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9534CC792E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "SlideCloneTests" */;
+			buildConfigurationList = 9534CC792E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "ExcuseMeTests" */;
 			buildPhases = (
 				9534CC5E2E8564DC00CFE1E7 /* Sources */,
 				9534CC5F2E8564DC00CFE1E7 /* Frameworks */,
@@ -133,16 +133,16 @@
 			fileSystemSynchronizedGroups = (
 				9534CC652E8564DC00CFE1E7 /* SlideCloneTests */,
 			);
-			name = SlideCloneTests;
+			name = ExcuseMeTests;
 			packageProductDependencies = (
 			);
 			productName = SlideCloneTests;
-			productReference = 9534CC622E8564DC00CFE1E7 /* SlideCloneTests.xctest */;
+			productReference = 9534CC622E8564DC00CFE1E7 /* ExcuseMeTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		9534CC6B2E8564DC00CFE1E7 /* SlideCloneUITests */ = {
+		9534CC6B2E8564DC00CFE1E7 /* ExcuseMeUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9534CC7C2E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "SlideCloneUITests" */;
+			buildConfigurationList = 9534CC7C2E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "ExcuseMeUITests" */;
 			buildPhases = (
 				9534CC682E8564DC00CFE1E7 /* Sources */,
 				9534CC692E8564DC00CFE1E7 /* Frameworks */,
@@ -156,11 +156,11 @@
 			fileSystemSynchronizedGroups = (
 				9534CC6F2E8564DC00CFE1E7 /* SlideCloneUITests */,
 			);
-			name = SlideCloneUITests;
+			name = ExcuseMeUITests;
 			packageProductDependencies = (
 			);
 			productName = SlideCloneUITests;
-			productReference = 9534CC6C2E8564DC00CFE1E7 /* SlideCloneUITests.xctest */;
+			productReference = 9534CC6C2E8564DC00CFE1E7 /* ExcuseMeUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -186,7 +186,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 9534CC502E8564DB00CFE1E7 /* Build configuration list for PBXProject "SlideClone" */;
+			buildConfigurationList = 9534CC502E8564DB00CFE1E7 /* Build configuration list for PBXProject "ExcuseMe" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -200,9 +200,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				9534CC542E8564DB00CFE1E7 /* SlideClone */,
-				9534CC612E8564DC00CFE1E7 /* SlideCloneTests */,
-				9534CC6B2E8564DC00CFE1E7 /* SlideCloneUITests */,
+				9534CC542E8564DB00CFE1E7 /* ExcuseMe */,
+				9534CC612E8564DC00CFE1E7 /* ExcuseMeTests */,
+				9534CC6B2E8564DC00CFE1E7 /* ExcuseMeUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -258,12 +258,12 @@
 /* Begin PBXTargetDependency section */
 		9534CC642E8564DC00CFE1E7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 9534CC542E8564DB00CFE1E7 /* SlideClone */;
+			target = 9534CC542E8564DB00CFE1E7 /* ExcuseMe */;
 			targetProxy = 9534CC632E8564DC00CFE1E7 /* PBXContainerItemProxy */;
 		};
 		9534CC6E2E8564DC00CFE1E7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 9534CC542E8564DB00CFE1E7 /* SlideClone */;
+			target = 9534CC542E8564DB00CFE1E7 /* ExcuseMe */;
 			targetProxy = 9534CC6D2E8564DC00CFE1E7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -472,7 +472,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SlideClone.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SlideClone";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ExcuseMe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ExcuseMe";
 			};
 			name = Debug;
 		};
@@ -494,7 +494,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SlideClone.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SlideClone";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ExcuseMe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ExcuseMe";
 			};
 			name = Release;
 		};
@@ -541,7 +541,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		9534CC502E8564DB00CFE1E7 /* Build configuration list for PBXProject "SlideClone" */ = {
+		9534CC502E8564DB00CFE1E7 /* Build configuration list for PBXProject "ExcuseMe" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9534CC742E8564DC00CFE1E7 /* Debug */,
@@ -550,7 +550,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		9534CC762E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "SlideClone" */ = {
+		9534CC762E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "ExcuseMe" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9534CC772E8564DC00CFE1E7 /* Debug */,
@@ -559,7 +559,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		9534CC792E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "SlideCloneTests" */ = {
+		9534CC792E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "ExcuseMeTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9534CC7A2E8564DC00CFE1E7 /* Debug */,
@@ -568,7 +568,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		9534CC7C2E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "SlideCloneUITests" */ = {
+		9534CC7C2E8564DC00CFE1E7 /* Build configuration list for PBXNativeTarget "ExcuseMeUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9534CC7D2E8564DC00CFE1E7 /* Debug */,
