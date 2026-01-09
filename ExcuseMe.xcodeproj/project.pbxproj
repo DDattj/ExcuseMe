@@ -30,14 +30,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		9534CC572E8564DB00CFE1E7 /* SlideClone */ = {
+		9534CC572E8564DB00CFE1E7 /* ExcuseMe */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = SlideClone;
+			path = ExcuseMe;
 			sourceTree = "<group>";
 		};
-		9534CC652E8564DC00CFE1E7 /* SlideCloneTests */ = {
+		9534CC652E8564DC00CFE1E7 /* ExcuseMeTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = SlideCloneTests;
+			path = ExcuseMeTests;
 			sourceTree = "<group>";
 		};
 		9534CC6F2E8564DC00CFE1E7 /* SlideCloneUITests */ = {
@@ -75,8 +75,8 @@
 		9534CC4C2E8564DB00CFE1E7 = {
 			isa = PBXGroup;
 			children = (
-				9534CC572E8564DB00CFE1E7 /* SlideClone */,
-				9534CC652E8564DC00CFE1E7 /* SlideCloneTests */,
+				9534CC572E8564DB00CFE1E7 /* ExcuseMe */,
+				9534CC652E8564DC00CFE1E7 /* ExcuseMeTests */,
 				9534CC6F2E8564DC00CFE1E7 /* SlideCloneUITests */,
 				9534CC562E8564DB00CFE1E7 /* Products */,
 			);
@@ -108,7 +108,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				9534CC572E8564DB00CFE1E7 /* SlideClone */,
+				9534CC572E8564DB00CFE1E7 /* ExcuseMe */,
 			);
 			name = ExcuseMe;
 			packageProductDependencies = (
@@ -131,7 +131,7 @@
 				9534CC642E8564DC00CFE1E7 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				9534CC652E8564DC00CFE1E7 /* SlideCloneTests */,
+				9534CC652E8564DC00CFE1E7 /* ExcuseMeTests */,
 			);
 			name = ExcuseMeTests;
 			packageProductDependencies = (

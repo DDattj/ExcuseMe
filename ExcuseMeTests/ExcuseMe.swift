@@ -6,7 +6,7 @@
 //
 
 import Testing
-@testable import SlideClone
+@testable import ExcuseMe
 
 struct SlideCloneTests {
 
