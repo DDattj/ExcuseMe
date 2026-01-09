@@ -113,7 +113,7 @@ struct ContentView: View {
         // 승리 시 알림창
         .alert("휴! 탈출이다", isPresented: $vm.hasWon) {
             Button("다음 레벨로") {
-                vm.tryAgain()
+                vm.moveToNextLevel()
                 resetDragState()
             }
             Button("종료하기", role: .cancel) {}
@@ -126,6 +126,8 @@ struct ContentView: View {
                 vm.tryAgain()
             }
         }
+                .navigationTitle("출근 \(vm.currentLevel)일차")
+                .navigationBarTitleDisplayMode(.inline) //제목을 가운데에 예쁘게 놓는 옵션
     }
     
     // MARK: - Helper Views

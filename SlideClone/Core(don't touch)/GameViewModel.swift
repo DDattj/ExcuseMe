@@ -15,8 +15,7 @@ final class GameViewModel: ObservableObject {
     //게임 처음 상태 저장
     private var initialCars: [Car] = []
     // 현재 레벨을 기억
-    private let currentLevel: Int
-    
+    @Published var currentLevel: Int
     @Published var cars: [Car] = []
     @Published var hasWon: Bool = false
     @Published var moveCount: Int = 0
@@ -78,4 +77,22 @@ final class GameViewModel: ObservableObject {
             desiredDelta: desiredDelta
         )
     }
+    
+    // 다음 레벨로 넘어가는 함수
+        func moveToNextLevel() {
+            // 1. 레벨을 1 올리기(기본으로 뽑는 맵이 레벨1)
+            currentLevel += 1
+            
+            // 2. 올라간 레벨에 맞춰서 새로운 맵을 생성
+            let nextCars = core.generatePlayableBoard(level: currentLevel)
+            
+            // 3. 화면에 보여줄 차(cars)와 리셋용 원본(initialCars)을 모두 교체
+            cars = nextCars
+            initialCars = nextCars
+            
+            // 4. 점수판 초기화
+            hasWon = false
+            moveCount = 0
+            obstacleMoveCount = 0
+        }
 }
