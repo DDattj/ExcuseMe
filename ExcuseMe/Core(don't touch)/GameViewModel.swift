@@ -11,6 +11,8 @@ import Combine
 final class GameViewModel: ObservableObject {
     
     private let core: GameCore
+    //게임 기록 저장용
+    private var currentSeed: Int = 0
     
     //게임 처음 상태 저장
     private var initialCars: [Car] = []
@@ -25,15 +27,25 @@ final class GameViewModel: ObservableObject {
         let core = GameCore(rows: rows, cols: cols, goalExitSide: goalExitSide)
         self.currentLevel = level
         
-        // 1. 코어에게 레벨에 맞는 맵을 만들어달라고 요청
-        let createdCars = core.generatePlayableBoard(level: level)
-        let initialHasWon = core.isGoalState(createdCars)
+        // 이 레벨 깬 적 있나 확인
+                let savedSeed = UserDefaults.standard.integer(forKey: "Seed_Level_\(level)")
+                
+                if savedSeed != 0 {
+                    // 기록 있음 -> 그때 그 맵 불러오기 (고정)
+                    self.currentSeed = savedSeed
+                } else {
+                    // 기록 없음 -> 새로운 랜덤 맵 생성
+                    self.currentSeed = Int.random(in: 1...999999)
+                }
+        
+        let initialCars = core.generatePlayableBoard(level: level, seed: self.currentSeed)
+        let initialHasWon = core.isGoalState(initialCars)
         
         self.core = core
         
         // 2. 만든 맵을 '화면용(cars)'과 '보관용(initialCars)' 두 군데에 담기
-        self.cars = createdCars
-        self.initialCars = createdCars
+        self.cars = initialCars
+        self.initialCars = initialCars
         
         self.hasWon = initialHasWon
         self.moveCount = 0
@@ -80,19 +92,28 @@ final class GameViewModel: ObservableObject {
     
     // 다음 레벨로 넘어가는 함수
         func moveToNextLevel() {
-            //게임 상황을 저장 -> 이미 깬것은 색 바꾸려고
+            
+            //방금 깬 레벨의 시드를 영구 저장, 다음에 오면 이 맵 보여줌
+            UserDefaults.standard.set(currentSeed, forKey: "Seed_Level_\(currentLevel)")
+            
             GameData.shared.saveClearLevel(currentLevel)
-            // 1. 레벨을 1 올리기(기본으로 뽑는 맵이 레벨1)
+            
             currentLevel += 1
             
-            // 2. 올라간 레벨에 맞춰서 새로운 맵을 생성
-            let nextCars = core.generatePlayableBoard(level: currentLevel)
+            // 다음 레벨 시드 확인 -> 클리어가 되어있는지 안되어있는지 확인 목적
+            let savedSeed = UserDefaults.standard.integer(forKey: "Seed_Level_\(currentLevel)")
+            if savedSeed != 0 {
+                self.currentSeed = savedSeed
+            } else {
+                self.currentSeed = Int.random(in: 1...999999)
+            }
             
-            // 3. 화면에 보여줄 차(cars)와 리셋용 원본(initialCars)을 모두 교체
+            //올라간 레벨에 맞춰서 새로운 맵을 생성
+            let nextCars = core.generatePlayableBoard(level: currentLevel, seed: self.currentSeed)
+            //화면에 보여줄 차(cars)와 리셋용 원본(initialCars)을 모두 교체
             cars = nextCars
             initialCars = nextCars
-            
-            // 4. 점수판 초기화
+            //점수판 초기화
             hasWon = false
             moveCount = 0
             obstacleMoveCount = 0

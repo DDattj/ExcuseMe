@@ -37,8 +37,10 @@ struct MainView: View {
 
 struct LevelSelectView: View {
     let levels: [Level]
-    
-    @State private var clearedLevel: Int = 0
+
+    //@State 대신 @AppStorage 사용
+    //"clearedLevel" 값이 바뀌면, 화면이 알아서 감지하고 색을 바꿉니다.
+    @AppStorage("clearedLevel") private var clearedLevel: Int = 0
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -46,9 +48,7 @@ struct LevelSelectView: View {
                 //버튼 간격
                 LazyVStack(spacing: 50) {
                     
-                    Color.clear
-                        .frame(height: -5)
-                        .id("topSpacer")
+                    Color.clear.frame(height: 1).id("topSpacer")
                     
                     ForEach(Array(levels.enumerated()), id: \.element.id) { index, level in
                         
@@ -77,7 +77,7 @@ struct LevelSelectView: View {
                             //레벨버튼
                             Circle()
                             //클리어 했을때와 안했을때 색상
-                                .fill(level.id <= clearedLevel ? Color.purple.opacity(0.3) : Color.purple)
+                                .fill(level.id <= clearedLevel ? Color.blue.opacity(0.3) : Color.purple)
                                 .frame(width: 80, height: 80)
                                 .overlay(
                                     Text(level.title)
@@ -92,9 +92,7 @@ struct LevelSelectView: View {
                     .padding(.horizontal)
                     
                     //하단 여백을 '컨텐츠'로 추가 (탭 바와 간격 확보)
-                    Color.clear
-                        .frame(height: 100)
-                        .id("bottomSpacer")
+                    Color.clear.frame(height: 100).id("bottomSpacer")
                     
                 }
                 .padding(.vertical)
@@ -102,15 +100,8 @@ struct LevelSelectView: View {
             
             .onAppear {
                 DispatchQueue.main.async {
-                    withAnimation {
-                        proxy.scrollTo("topSpacer", anchor: UnitPoint.top) // 타입 명시로 에러 방지
-                    }
-                }
-            }
-            .onAppear {
-                DispatchQueue.main.async {
-                    withAnimation {
-                        proxy.scrollTo("bottomSpacer", anchor: .bottom)
+                                    withAnimation {
+                                        proxy.scrollTo("bottomSpacer", anchor: .bottom) // 타입 명시로 에러 방지
                     }
                 }
             }

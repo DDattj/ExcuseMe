@@ -238,7 +238,7 @@ struct GameCore {
     // MARK: - 보드 생성
     
     //레벨(난이도)을 입력받아 보드를 생성하는 함수
-        func generatePlayableBoard(level: Int) -> [Car] {
+        func generatePlayableBoard(level: Int, seed: Int) -> [Car] {
             var attempts = 0
             
             // 레벨이 높을수록 장애물(차)을 많이 배치
@@ -249,30 +249,37 @@ struct GameCore {
             // 레벨이 높을수록 최소한 움직여야 하는 횟수(난이도)를 높임
             // 예: 1레벨은 2번만 움직여도 됨, 10레벨은 최소 6번 이상 움직여야 풀리게 함
             let minRequiredMoves = max(2, level / 2 + 1)
+            
+            var currentSeed = seed
 
             while attempts < 1000 {
+                
+                var rng = SeededGenerator(seed: currentSeed)
                 // targetObstacleCount 개수만큼 장애물을 넣어 랜덤 생성
-                let board = generateRandomBoard(obstacleCount: targetObstacleCount)
-
+                let board = generateRandomBoard(obstacleCount: targetObstacleCount, using: &rng)
+                
                 // 너무 쉬운 문제(그냥 바로 풀리는 거) 거르기
                 if isTriviallySolvableWithoutObstacles(board) {
                     attempts += 1
+                    currentSeed += 1
                     continue
                 }
-
                 // BFS 알고리즘으로 풀어봤을 때, 최소 이동 횟수가 기준보다 높으면 합격!
                 if let minObstacle = minimalObstacleMovesRequired(for: board),
                    minObstacle >= minRequiredMoves {
                     return board
                 }
                 attempts += 1
+                currentSeed += 1
             }
-            // 경우의 수를 정 못 찾으면 그냥 아무 맵이나 만들기)
-            return generateRandomBoard(obstacleCount: targetObstacleCount)
+            var fallbackRng = SeededGenerator(seed: seed)
+            
+            // 경우의 수를 정 못 찾으면 그냥 아무 맵이나 만들기, 만약 풀었다면 기존에 풀었던 결과를 가져오기
+            return generateRandomBoard(obstacleCount: targetObstacleCount, using: &fallbackRng)
         }
 
-        // [수정됨] 장애물 개수를 지정해서 만드는 내부 함수
-        private func generateRandomBoard(obstacleCount: Int) -> [Car] {
+        // 장애물 개수를 지정해서 만드는 내부 함수
+        private func generateRandomBoard(obstacleCount: Int, using rng: inout SeededGenerator) -> [Car] {
             var grid = Array(repeating: Array(repeating: false, count: cols), count: rows)
             var result: [Car] = []
 
@@ -303,22 +310,22 @@ struct GameCore {
 
             // 장애물 배치 (입력받은 개수만큼 시도)
             for _ in 0..<obstacleCount {
-                let length = Bool.random() ? 2 : 3
-                let horizontal = Bool.random()
+                let length = Bool.random(using: &rng) ? 2 : 3
+                let horizontal = Bool.random(using: &rng)
 
                 // 랜덤 위치 시도 (10번 정도 시도해보고 안 되면 포기)
                 for _ in 0..<10 {
                     if horizontal {
-                        let r = Int.random(in: 0..<rows)
-                        let c = Int.random(in: 0..<(cols - length + 1))
+                        let r = Int.random(in: 0..<rows, using: &rng)
+                        let c = Int.random(in: 0..<(cols - length + 1), using: &rng)
                         if canPlace(row: r, col: c, length: length, horizontal: true) {
                             place(row: r, col: c, length: length, horizontal: true)
                             result.append(Car(row: r, col: c, length: length, horizontal: true, isGoal: false))
                             break
                         }
                     } else {
-                        let r = Int.random(in: 0..<(rows - length + 1))
-                        let c = Int.random(in: 0..<cols)
+                        let r = Int.random(in: 0..<(rows - length + 1), using: &rng)
+                        let c = Int.random(in: 0..<cols, using: &rng)
                         if canPlace(row: r, col: c, length: length, horizontal: false) {
                             place(row: r, col: c, length: length, horizontal: false)
                             result.append(Car(row: r, col: c, length: length, horizontal: false, isGoal: false))
@@ -331,59 +338,14 @@ struct GameCore {
             return result
         }
 
-    private func generateRandomBoard() -> [Car] {
-        var grid = Array(repeating: Array(repeating: false, count: cols), count: rows)
-        var result: [Car] = []
-
-        func canPlace(row: Int, col: Int, length: Int, horizontal: Bool) -> Bool {
-            if horizontal {
-                if col + length > cols { return false }
-                for c in col..<(col+length) { if grid[row][c] { return false } }
-            } else {
-                if row + length > rows { return false }
-                for r in row..<(row+length) { if grid[r][col] { return false } }
-            }
-            return true
+    //'맵 랜덤 -> 클리어 하면 고정' 설정을 위해서
+    struct SeededGenerator: RandomNumberGenerator {
+        var seed: UInt64
+        init(seed: Int) { self.seed = UInt64(seed) }
+        mutating func next() -> UInt64 {
+            seed = 6364136223846793005 &* seed &+ 1
+            return seed
         }
-
-        func place(row: Int, col: Int, length: Int, horizontal: Bool) {
-            if horizontal {
-                for c in col..<(col+length) { grid[row][c] = true }
-            } else {
-                for r in row..<(row+length) { grid[r][col] = true }
-            }
-        }
-
-        // 목표 차량
-        let goalRow = rows / 2
-        let goalCar = Car(row: goalRow, col: 0, length: 2, horizontal: true, isGoal: true)
-        place(row: goalCar.row, col: goalCar.col, length: goalCar.length, horizontal: goalCar.horizontal)
-        result.append(goalCar)
-
-        // 장애물
-        let obstacleCount = max(6, (rows * cols) / 8)
-        for _ in 0..<obstacleCount {
-            let length = Bool.random() ? 2 : 3
-            let horizontal = Bool.random()
-
-            if horizontal {
-                let r = Int.random(in: 0..<rows)
-                let c = Int.random(in: 0..<(cols - length + 1))
-                if canPlace(row: r, col: c, length: length, horizontal: true) {
-                    place(row: r, col: c, length: length, horizontal: true)
-                    result.append(Car(row: r, col: c, length: length, horizontal: true, isGoal: false))
-                }
-            } else {
-                let r = Int.random(in: 0..<(rows - length + 1))
-                let c = Int.random(in: 0..<cols)
-                if canPlace(row: r, col: c, length: length, horizontal: false) {
-                    place(row: r, col: c, length: length, horizontal: false)
-                    result.append(Car(row: r, col: c, length: length, horizontal: false, isGoal: false))
-                }
-            }
-        }
-
-        return result
     }
 }
 
