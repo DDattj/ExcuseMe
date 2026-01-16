@@ -16,9 +16,10 @@ struct Level: Identifiable, Hashable {
 struct MainView: View {
     // 1부터 n라운드까지 오름차순
     private let levels: [Level] = (1...20).map { Level(id: $0, title: "출근 \($0)일차") }
-    
+    @State private var isAppLoading: Bool = true
     
     var body: some View {
+        
         TabView {
             NavigationStack {
                 LevelSelectView(levels: levels.reversed())
@@ -36,7 +37,21 @@ struct MainView: View {
             SettingsView()
                 .tabItem { Label("설정", systemImage: "gear") }
         }
-    }
+        if isAppLoading {
+                    // "타입"을 .appLaunch로 지정!
+                    LoadingView(type: .appLaunch) // 메시지는 기본값 사용("오늘도 칼퇴를 위해...")
+                        .transition(.opacity.animation(.easeInOut))
+                        .zIndex(10) // 탭뷰보다 위에
+                        .task {
+                            // 1.5초 동안 로딩 보여주기
+                            try? await Task.sleep(nanoseconds: 1_500_000_000)
+                            withAnimation {
+                                isAppLoading = false
+                            }
+                        }
+                }
+            }
+    
     
     // 뷰 생성 함수
     func contentView(for level: Level) -> some View {

@@ -22,37 +22,50 @@ final class GameViewModel: ObservableObject {
     @Published var hasWon: Bool = false
     @Published var moveCount: Int = 0
     @Published var obstacleMoveCount: Int = 0
+    @Published var isLoading: Bool = true
     
     init(rows: Int, cols: Int, goalExitSide: GameCore.ExitSide, level: Int) {
         let core = GameCore(rows: rows, cols: cols, goalExitSide: goalExitSide)
-        self.currentLevel = level
-        
-        // 이 레벨 깬 적 있나 확인
-                let savedSeed = UserDefaults.standard.integer(forKey: "Seed_Level_\(level)")
-                
-                if savedSeed != 0 {
-                    // 기록 있음 -> 그때 그 맵 불러오기 (고정)
-                    self.currentSeed = savedSeed
-                } else {
-                    // 기록 없음 -> 새로운 랜덤 맵 생성
-                    self.currentSeed = Int.random(in: 1...999999)
-                }
-        
-        let initialCars = core.generatePlayableBoard(level: level, seed: self.currentSeed)
-        let initialHasWon = core.isGoalState(initialCars)
-        
         self.core = core
-        
-        // 2. 만든 맵을 '화면용(cars)'과 '보관용(initialCars)' 두 군데에 담기
-        self.cars = initialCars
-        self.initialCars = initialCars
-        
-        self.hasWon = initialHasWon
-        self.moveCount = 0
-        self.obstacleMoveCount = 0
+        self.currentLevel = level
+        self.cars = []
+        self.initialCars = []
+        self.isLoading = true // 로딩 중 표시
     }
     
     var goalExitSide: GameCore.ExitSide { core.goalExitSide }
+    
+    @MainActor
+    func loadLevel() async {
+        self.isLoading = true
+        
+        // 너무 빨리 깜빡이는 것 방지 (0.1초 대기)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        
+        // 백그라운드 스레드에서 무거운 계산 수행
+        let (newCars, seed) = await Task.detached { [weak self] () -> ([Car], Int) in
+            guard let self = self else { return ([], 0) }
+            
+            // 시드 확인 로직
+            let savedSeed = UserDefaults.standard.integer(forKey: "Seed_Level_\(await self.currentLevel)")
+            let currentSeed = (savedSeed != 0) ? savedSeed : Int.random(in: 1...999999)
+            
+            // 여기서 맵 생성 (무거운 작업)
+            let generatedCars = await self.core.generatePlayableBoard(level: self.currentLevel, seed: currentSeed)
+            
+            return (generatedCars, currentSeed)
+        }.value
+        
+        // UI 업데이트 (메인 스레드)
+        self.currentSeed = seed
+        self.cars = newCars
+        self.initialCars = newCars
+        self.hasWon = self.core.isGoalState(newCars)
+        self.moveCount = 0
+        self.obstacleMoveCount = 0
+        
+        self.isLoading = false // 로딩 끝
+    }
     
     //다시 시작 기능
     func tryAgain() {
@@ -91,31 +104,17 @@ final class GameViewModel: ObservableObject {
     }
     
     // 다음 레벨로 넘어가는 함수
-        func moveToNextLevel() {
-            
-            //방금 깬 레벨의 시드를 영구 저장, 다음에 오면 이 맵 보여줌
-            UserDefaults.standard.set(currentSeed, forKey: "Seed_Level_\(currentLevel)")
-            
-            GameData.shared.saveClearLevel(currentLevel)
-            
-            currentLevel += 1
-            
-            // 다음 레벨 시드 확인 -> 클리어가 되어있는지 안되어있는지 확인 목적
-            let savedSeed = UserDefaults.standard.integer(forKey: "Seed_Level_\(currentLevel)")
-            if savedSeed != 0 {
-                self.currentSeed = savedSeed
-            } else {
-                self.currentSeed = Int.random(in: 1...999999)
-            }
-            
-            //올라간 레벨에 맞춰서 새로운 맵을 생성
-            let nextCars = core.generatePlayableBoard(level: currentLevel, seed: self.currentSeed)
-            //화면에 보여줄 차(cars)와 리셋용 원본(initialCars)을 모두 교체
-            cars = nextCars
-            initialCars = nextCars
-            //점수판 초기화
-            hasWon = false
-            moveCount = 0
-            obstacleMoveCount = 0
+    func moveToNextLevel() {
+        
+        //방금 깬 레벨의 시드를 영구 저장, 다음에 오면 이 맵 보여줌
+        UserDefaults.standard.set(currentSeed, forKey: "Seed_Level_\(currentLevel)")
+        GameData.shared.saveClearLevel(currentLevel)
+        
+        currentLevel += 1
+        
+        Task {
+            await loadLevel()
         }
+    }
 }
+

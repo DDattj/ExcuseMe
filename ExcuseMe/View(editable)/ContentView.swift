@@ -24,7 +24,7 @@ extension Car {
 struct ContentView: View {
     // 뷰에서 사용할 그리드 설정
     // 실제 로직은 ViewModel/Core에 있는 값을 따름
-    // 여기있는 값은 '크기' 계산용입니다.
+    // 여기있는 값은 '크기' 계산용
     let rows = 6
     let cols = 6
     let spacing: CGFloat = 3
@@ -48,6 +48,35 @@ struct ContentView: View {
     
     // MARK: - View Body
     var body: some View {
+        ZStack {
+            //로딩 상태에 따라 화면 교체
+            if vm.isLoading {
+                // "타입"을 .mapGeneration으로 지정!
+                LoadingView(type: .mapGeneration, message: "레벨 \(vm.currentLevel) 지도를 열심히 만드는 중...")
+                    .transition(.opacity)
+                    .zIndex(1) // 제일 위에 떠있게
+            } else {
+                // 아래에 정의해둔 게임 화면을 불러오기
+                gameContent
+                    .transition(.opacity)
+            }
+        }
+        .task {
+            if vm.cars.isEmpty {
+                await vm.loadLevel()
+            }
+        }
+        .onAppear {
+            if vm.cars.isEmpty {
+                // task에서 처리하므로 비워둬도 되지만, 안전장치로 둠
+            }
+        }
+        .navigationTitle("출근 \(vm.currentLevel)일차")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    // 복잡한 게임 화면 코드를 여기로 따로 빼기 (주석 그대로 유지)
+    var gameContent: some View {
         VStack(spacing: 30) {
             // 상단: 다시시작 버튼
             HStack {
@@ -56,6 +85,7 @@ struct ContentView: View {
                     resetDragState()
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(vm.moveCount == 0)
                 Spacer()
             }
             
@@ -73,12 +103,12 @@ struct ContentView: View {
                 let gridOriginY = (side - contentHeight) / 2
                 
                 ZStack(alignment: .topLeading) {
-                    // 1. 배경 판 (연한 보라색)
+                    //배경 판 (연한 보라색)
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color.purple.opacity(0.1))
                         .frame(width: side, height: side)
                     
-                    // 2. 그리드 칸 (더 연한 보라색)
+                    //그리드 칸 (더 연한 보라색)
                     VStack(spacing: spacing) {
                         ForEach(0..<rows, id: \.self) { _ in
                             HStack(spacing: spacing) {
@@ -92,10 +122,10 @@ struct ContentView: View {
                     }
                     .frame(width: side, height: side)
                     
-                    // 3. 출구 표시 (Exit Marker)
+                    //출구 표시 (Exit Marker)
                     drawExitMarker(side: side, cell: cell, spacing: spacing)
                     
-                    // 4. 자동차들 배치
+                    //자동차들 배치
                     ForEach(vm.cars.indices, id: \.self) { i in
                         carView(
                             for: vm.cars[i],
@@ -126,8 +156,6 @@ struct ContentView: View {
                 vm.tryAgain()
             }
         }
-                .navigationTitle("출근 \(vm.currentLevel)일차")
-                .navigationBarTitleDisplayMode(.inline) //제목을 가운데에 예쁘게 놓는 옵션
     }
     
     // MARK: - Helper Views
@@ -161,11 +189,11 @@ struct ContentView: View {
     func carView(for car: Car, index: Int, cell: CGFloat, origin: CGSize) -> some View {
         
         let width  = car.horizontal
-            ? cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
-            : cell
+        ? cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
+        : cell
         let height = car.horizontal
-            ? cell
-            : cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
+        ? cell
+        : cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
         
         // 차의 현재 위치 계산
         let offsetX = origin.width  + CGFloat(car.col) * (cell + spacing)
@@ -211,7 +239,7 @@ struct ContentView: View {
                         let translation = axis == .horizontal ? value.translation.width : value.translation.height
                         let desiredSteps = Int(round(translation / step))
                         
-                        // 3. [중요] 뷰모델에게 "이만큼 가도 돼?"라고 물어봅니다. (직접 계산 X)
+                        // 3. 뷰모델에게 "이만큼 가도 돼?"라고 물어봄 (직접 계산 X)
                         let allowedSteps = vm.calculateAllowedSteps(
                             index: index,
                             axis: axis,
