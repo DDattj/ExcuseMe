@@ -74,18 +74,20 @@ struct LoadingView: View {
         switch type {
         case .mapGeneration:
             // 1. 맵 생성: 톱니바퀴나 지도가 뱅글뱅글 도는 느낌
-            Image(systemName: "gearshape.2.fill") // 혹은 type.iconName
+            Image("SampleSmile") //이미지 이름이나 아이콘 이름 넣기
+                .resizable()
+                .scaledToFit()
                 .font(.system(size: 50))
                 .foregroundStyle(type.color)
                 .rotationEffect(.degrees(isAnimating ? 360 : 0))
                 .animation(.linear(duration: 2).repeatForever(autoreverses: false), value: isAnimating)
-                .overlay(
+                /*.overlay(
                     Image(systemName: "hammer.fill")
                         .font(.title)
                         .offset(x: 20, y: -20)
                         .rotationEffect(.degrees(isAnimating ? -20 : 20))
                         .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isAnimating)
-                )
+                )*/
             
         case .navigation:
             // 2. 이동: 화살표가 슝슝 움직이는 느낌
