@@ -106,6 +106,10 @@ final class GameViewModel: ObservableObject {
     // 다음 레벨로 넘어가는 함수
     func moveToNextLevel() {
         
+        //코인 보상을 지금
+        GameData.shared.addCoins(50)
+        print("\(GameData.shared.coins)원")
+        
         //방금 깬 레벨의 시드를 영구 저장, 다음에 오면 이 맵 보여줌
         UserDefaults.standard.set(currentSeed, forKey: "Seed_Level_\(currentLevel)")
         GameData.shared.saveClearLevel(currentLevel)
