@@ -6,12 +6,14 @@
 //
 
 import Foundation
+import SwiftUI
 
 // 아이템 데이터 보관소 (가게 창고)
 struct ItemDatabase {
     
     // 전체 아이템 리스트 (나중에는 서버에서 받아올 수도 있음)
     static let allItems: [ShopItem] = [
+        
         // [자동차 스킨]
         ShopItem(id: "skin_red", type: .carSkin, name: "기본 레드", description: "기본 지급 차량", price: 0, resourceName: "red"),
         ShopItem(id: "skin_blue", type: .carSkin, name: "시원한 블루", description: "칼퇴의 꿈을 담은 색", price: 100, resourceName: "blue"),
@@ -30,5 +32,15 @@ struct ItemDatabase {
     // 종류별로 아이템을 필터링해주는 함수 (상점에서 탭 나눌 때 유용)
     static func getItems(type: ItemType) -> [ShopItem] {
         return allItems.filter { $0.type == type }
+    }
+    // "red"라는 글자가 들어오면 진짜 Color.red를 뱉어주는 함수
+    static func color(forName name: String) -> Color {
+        switch name {
+        case "red": return .red
+        case "blue": return .blue
+        case "mint": return .green
+        case "yellow": return .yellow
+        default: return .red // 모르는 색이면 기본 빨강
+        }
     }
 }

@@ -33,7 +33,7 @@ struct MainView: View {
             //메인에 띄울 네비게이션 창 커스텀
             .tabItem { Label("메인", systemImage: "calendar")}
             SettingsView().tabItem { Label("집", systemImage: "house")}
-            SettingsView().tabItem { Label("상점", systemImage: "c.circle")}
+            ShopView().tabItem { Label("상점", systemImage: "c.circle")}
             SettingsView()
                 .tabItem { Label("설정", systemImage: "gear") }
         }

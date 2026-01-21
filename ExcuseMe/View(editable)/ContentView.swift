@@ -13,7 +13,15 @@ import SwiftUI
 extension Car {
     var color: Color {
         if isGoal {
-            return .red // 내 캐릭터 색
+            //현재 GameData에 저장된 '장착 스킨 ID'를 가져오기
+            let skinID = GameData.shared.equippedSkin
+            //그 ID에 해당하는 아이템 정보를 찾기
+            if let item = ItemDatabase.findItem(id: skinID) {
+                //아이템의 색상 이름(resourceName)을 실제 색으로 바꿔서 반환
+                return ItemDatabase.color(forName: item.resourceName) // 내 캐릭터 색
+            }
+            return .red // 만약 못 찾으면 기본값
+            
         } else {
             return horizontal ? .blue : .green // 장애물 색
             //여기 나중에 랜덤 컬러 불러오게 하려면 어떻게 하면 되는지 물어보기
