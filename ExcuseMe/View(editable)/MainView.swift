@@ -56,12 +56,15 @@ struct MainView: View {
             .tag(TabType.main)
             SettingsView().tabItem { Label("집", systemImage: "house")}
 <<<<<<< HEAD
+<<<<<<< HEAD
                 .tag(TabType.home)
             ShopView().tabItem { Label("상점", systemImage: "c.circle")}
                 .tag(TabType.shop)
             SettingsView().tabItem { Label("설정", systemImage: "gear") }
                 .tag(TabType.settings)
 =======
+=======
+>>>>>>> parent of 7b1d472 (ShopSystem)
             SettingsView().tabItem { Label("상점", systemImage: "c.circle")}
             SettingsView()
                 .tabItem { Label("설정", systemImage: "gear") }
