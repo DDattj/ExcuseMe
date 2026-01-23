@@ -14,13 +14,34 @@ struct Level: Identifiable, Hashable {
 }
 
 struct MainView: View {
+    //앱 상태 관리자 생성
+    @StateObject private var appState = AppState()
+    
     // 1부터 n라운드까지 오름차순
     private let levels: [Level] = (1...20).map { Level(id: $0, title: "출근 \($0)일차") }
     @State private var isAppLoading: Bool = true
     
     var body: some View {
         
-        TabView {
+        let tabBinding = Binding<TabType>(
+            get: { appState.selectedTab},
+            set: { newTab in
+                if newTab == appState.selectedTab {
+                    return
+                }
+                //겜 플레이중이면 알림 띄우고 이동 중지, 아니면 그냥 이동
+                if appState.isGamePlaying{
+                    appState.targetTab = newTab
+                    appState.showExitAlert = true
+                } else {
+                    appState.selectedTab = newTab
+                }
+            }
+        )
+        
+        ZStack {
+        
+        TabView(selection: tabBinding) {
             NavigationStack {
                 LevelSelectView(levels: levels.reversed())
                 // 여기서 Level 값을 받아 실제로 화면을 이동.
@@ -32,25 +53,48 @@ struct MainView: View {
             }
             //메인에 띄울 네비게이션 창 커스텀
             .tabItem { Label("메인", systemImage: "calendar")}
+            .tag(TabType.main)
             SettingsView().tabItem { Label("집", systemImage: "house")}
+                .tag(TabType.home)
             ShopView().tabItem { Label("상점", systemImage: "c.circle")}
-            SettingsView()
-                .tabItem { Label("설정", systemImage: "gear") }
+                .tag(TabType.shop)
+            SettingsView().tabItem { Label("설정", systemImage: "gear") }
+                .tag(TabType.settings)
         }
-        if isAppLoading {
-                    // "타입"을 .appLaunch로 지정!
-                    LoadingView(type: .appLaunch) // 메시지는 기본값 사용("오늘도 칼퇴를 위해...")
-                        .transition(.opacity.animation(.easeInOut))
-                        .zIndex(10) // 탭뷰보다 위에
-                        .task {
-                            // 1.5초 동안 로딩 보여주기
-                            try? await Task.sleep(nanoseconds: 1_500_000_000)
-                            withAnimation {
-                                isAppLoading = false
-                            }
-                        }
+        .environmentObject(appState)
+        
+        //게임 종료시 확인 알림창
+        .alert("게임 종료", isPresented: $appState.showExitAlert) {
+            Button("이동", role: .destructive) {
+                // 확인 누르면 -> 게임 중 상태 끄고, 목표 탭으로 이동
+                appState.isGamePlaying = false
+                if let target = appState.targetTab {
+                    appState.selectedTab = target
                 }
             }
+            Button("취소", role: .cancel) {
+                // 취소 누르면 -> 아무 일도 안 일어남 (현재 화면 유지)
+                appState.targetTab = nil
+            }
+        } message: {
+            Text("지금 이동하면 게임 진행 상황이 사라집니다.\n정말 이동하시겠습니까?")
+        }
+        
+            if isAppLoading {
+                // "타입"을 .appLaunch로 지정!
+                LoadingView(type: .appLaunch) // 메시지는 기본값 사용("오늘도 칼퇴를 위해...")
+                    .transition(.opacity.animation(.easeInOut))
+                    .zIndex(10) // 탭뷰보다 위에
+                    .task {
+                        // 1.5초 동안 로딩 보여주기
+                        try? await Task.sleep(nanoseconds: 1_500_000_000)
+                        withAnimation {
+                            isAppLoading = false
+                        }
+                    }
+            }
+        }
+    }
     
     
     // 뷰 생성 함수
@@ -160,36 +204,36 @@ struct LevelSelectView: View {
         return CGFloat(value)
     }
 }
+
+// 레벨 버튼 디자인을 별도 뷰로 분리
+struct LevelCircleView: View {
+    let level: Level
+    let isLocked: Bool
+    let clearedLevel: Int
     
-    // 레벨 버튼 디자인을 별도 뷰로 분리
-    struct LevelCircleView: View {
-        let level: Level
-        let isLocked: Bool
-        let clearedLevel: Int
-        
-        var body: some View {
-            Circle()
-                // 잠김(회색) / 깸(파랑) / 도전가능(보라)
-                .fill(isLocked ? Color.gray.opacity(0.5) : (level.id <= clearedLevel ? Color.blue.opacity(0.3) : Color.purple))
-                .frame(width: 80, height: 80)
-                .overlay(
-                    VStack {
-                        if isLocked {
-                            Image(systemName: "lock.fill")
-                            Text("출근\n준비중")
-                                .font(.callout)
-                                .foregroundStyle(.white)
-                                .multilineTextAlignment(.center)
-                        } else {
-                            Text(level.title) // "출근 n일차"
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .multilineTextAlignment(.center)
-                        }
+    var body: some View {
+        Circle()
+        // 잠김(회색) / 깸(파랑) / 도전가능(보라)
+            .fill(isLocked ? Color.gray.opacity(0.5) : (level.id <= clearedLevel ? Color.blue.opacity(0.3) : Color.purple))
+            .frame(width: 80, height: 80)
+            .overlay(
+                VStack {
+                    if isLocked {
+                        Image(systemName: "lock.fill")
+                        Text("출근\n준비중")
+                            .font(.callout)
+                            .foregroundStyle(.white)
+                            .multilineTextAlignment(.center)
+                    } else {
+                        Text(level.title) // "출근 n일차"
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .multilineTextAlignment(.center)
                     }
-                )
-        }
+                }
+            )
     }
+}
 
 struct SettingsView: View {
     var body: some View {

@@ -37,6 +37,12 @@ struct ContentView: View {
     let cols = 6
     let spacing: CGFloat = 3
     
+    //AppState 가져오기
+    @EnvironmentObject var appState: AppState
+    // 뒤로가기(Dismiss) 동작을 위한 변수
+    @Environment(\.dismiss) private var dismiss
+    @State private var showBackAlert = false
+    
     // 뷰모델 연결
     @StateObject private var vm: GameViewModel
     
@@ -75,13 +81,42 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            if vm.cars.isEmpty {
-                // task에서 처리하므로 비워둬도 되지만, 안전장치로 둠
-            }
+            appState.isGamePlaying = true
+        }
+        .onDisappear {
+            appState.isGamePlaying = false
         }
         .navigationTitle("출근 \(vm.currentLevel)일차")
         .navigationBarTitleDisplayMode(.inline)
+        navigationBarBackButtonHidden(true)
+        
+            .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    if vm.moveCount > 0 {
+                        showBackAlert = true
+                    } else {
+                        dismiss()
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
+                    }
+                }
+            }
+        }
+        .alert("게임 종료", isPresented: $showBackAlert) {
+            Button("종료", role: .destructive) {
+                appState.isGamePlaying = false
+                dismiss()
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("메인 화면으로 돌아가시겠습니까?\n진행 상황은 저장되지 않습니다.")
+        }
     }
+    
     
     // 복잡한 게임 화면 코드를 여기로 따로 빼기 (주석 그대로 유지)
     var gameContent: some View {
