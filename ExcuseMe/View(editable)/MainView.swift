@@ -55,11 +55,17 @@ struct MainView: View {
             .tabItem { Label("메인", systemImage: "calendar")}
             .tag(TabType.main)
             SettingsView().tabItem { Label("집", systemImage: "house")}
+<<<<<<< HEAD
                 .tag(TabType.home)
             ShopView().tabItem { Label("상점", systemImage: "c.circle")}
                 .tag(TabType.shop)
             SettingsView().tabItem { Label("설정", systemImage: "gear") }
                 .tag(TabType.settings)
+=======
+            SettingsView().tabItem { Label("상점", systemImage: "c.circle")}
+            SettingsView()
+                .tabItem { Label("설정", systemImage: "gear") }
+>>>>>>> parent of 7b1d472 (ShopSystem)
         }
         .environmentObject(appState)
         
