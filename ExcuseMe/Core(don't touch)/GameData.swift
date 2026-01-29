@@ -68,10 +68,10 @@ class GameData {
     }
     
     // 현재 장착 중인 스킨
-        var equippedSkin: String {
-            get { UserDefaults.standard.string(forKey: equipSkinKey) ?? "skin_red" }
-            set { UserDefaults.standard.set(newValue, forKey: equipSkinKey) }
-        }
+    var equippedSkin: String {
+        get { UserDefaults.standard.string(forKey: equipSkinKey) ?? "skin_red" }
+        set { UserDefaults.standard.set(newValue, forKey: equipSkinKey) }
+    }
     
     // 특정 아이템을 몇 개 가지고 있는지 확인하는 함수
     func getItemCount(itemId: String) -> Int {
@@ -91,6 +91,21 @@ class GameData {
             return true
         }
         return false
+    }
+    
+    // MARK: - 데이터 초기화
+    func resetAllData() {
+        // 저장된 데이터 삭제
+        UserDefaults.standard.removeObject(forKey: clearKey)     // 깬 레벨
+        UserDefaults.standard.removeObject(forKey: coinKey)      // 코인
+        UserDefaults.standard.removeObject(forKey: inventoryKey) // 인벤토리
+        UserDefaults.standard.removeObject(forKey: equipSkinKey) // 장착 스킨
+        
+        // 메모리에 있는 변수들도 초기화 (앱을 껐다 켜지 않아도 즉시 반영되게)
+        
+        coins = 0                   // 코인 초기화
+        inventory = ["skin_red": 1] // 기본 스킨만 남김
+        equippedSkin = "skin_red"
     }
 }
 

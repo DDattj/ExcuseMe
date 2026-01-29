@@ -30,6 +30,10 @@ extension Car {
 }
 
 struct ContentView: View {
+    
+    //화면을 닫기(뒤로가기) 위한 환경 변수
+    @Environment(\.dismiss) private var dismiss
+    
     // 뷰에서 사용할 그리드 설정
     // 실제 로직은 ViewModel/Core에 있는 값을 따름
     // 여기있는 값은 '크기' 계산용
@@ -49,6 +53,8 @@ struct ContentView: View {
     @State private var isDragging: Bool = false
     @State private var shakePhase: CGFloat = 0
     
+    //뒤로가기 경고창을 띄울지 여부를 결정하는 변수
+    @State private var showExitAlert = false
     // MainView에서 vm을 전달받기 위해 init 추가. 여기서 레벨 1은 만약 출력값을 알지 못할 경우 레벨 1로 뽑아달라는 이야기(예비용)
     init(vm: GameViewModel = GameViewModel(rows: 6, cols: 6, goalExitSide: .right, level: 1)) {
         _vm = StateObject(wrappedValue: vm)
@@ -81,241 +87,276 @@ struct ContentView: View {
         }
         .navigationTitle("출근 \(vm.currentLevel)일차")
         .navigationBarTitleDisplayMode(.inline)
+        
+        //게임 화면에서는 하단 탭바 숨기기
+        .toolbar(.hidden, for: .tabBar)
+        // 뒤로가기 버튼 숨기기 (필수: 그래야 우리가 만든 버튼이 작동함)
+        .navigationBarBackButtonHidden(true)
+        //커스텀 뒤로가기 버튼 만들기
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    // 움직인 적이 있으면(0보다 크면) 알림, 없으면 바로 탈출
+                    if vm.moveCount > 0 {
+                        showExitAlert = true
+                    } else {
+                        dismiss()
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "chevron.left")
+                            .bold()
+                        // 기본 버튼보다 살짝 얇을 수 있어서 볼드 처리
+                    }
+                }
+            }
+        }
+        // 종료 확인 알림창
+            .alert("게임을 종료할까요?", isPresented: $showExitAlert) {
+                Button("종료하기", role: .destructive) {
+                    dismiss()
+                }
+                Button("계속하기", role: .cancel) { }
+            } message: {
+                Text("지금 나가면 현재 게임 진행 상황이 사라집니다.")
+            }
     }
-    
-    // 복잡한 게임 화면 코드를 여기로 따로 빼기 (주석 그대로 유지)
-    var gameContent: some View {
-        VStack(spacing: 30) {
-            // 상단: 다시시작 버튼
-            HStack {
-                Button("Try Again!") {
-                    vm.tryAgain()
+        
+        
+        // 복잡한 게임 화면 코드를 여기로 따로 빼기 (주석 그대로 유지)
+        var gameContent: some View {
+            VStack(spacing: 30) {
+                // 상단: 다시시작 버튼
+                HStack {
+                    Button("Try Again!") {
+                        vm.tryAgain()
+                        resetDragState()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(vm.moveCount == 0)
+                    Spacer()
+                }
+                
+                // 메인 게임 보드 영역
+                GeometryReader { geo in
+                    // 화면 크기에 맞춰서 칸 크기(cell) 계산
+                    let rawSide = min(geo.size.width, geo.size.height) - 8
+                    let side = max(rawSide, 0)
+                    let cell = side > 0 ? (side - spacing * CGFloat(cols - 1)) / CGFloat(cols) : 0
+                    
+                    // 그리드 전체 크기와 원점 계산
+                    let contentWidth  = cell * CGFloat(cols) + spacing * CGFloat(cols - 1)
+                    let contentHeight = cell * CGFloat(rows) + spacing * CGFloat(rows - 1)
+                    let gridOriginX = (side - contentWidth)  / 2
+                    let gridOriginY = (side - contentHeight) / 2
+                    
+                    ZStack(alignment: .topLeading) {
+                        //배경 판 (연한 보라색)
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.purple.opacity(0.1))
+                            .frame(width: side, height: side)
+                        
+                        //그리드 칸 (더 연한 보라색)
+                        VStack(spacing: spacing) {
+                            ForEach(0..<rows, id: \.self) { _ in
+                                HStack(spacing: spacing) {
+                                    ForEach(0..<cols, id: \.self) { _ in
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(Color.purple.opacity(0.18))
+                                            .frame(width: cell, height: cell)
+                                    }
+                                }
+                            }
+                        }
+                        .frame(width: side, height: side)
+                        
+                        //출구 표시 (Exit Marker)
+                        drawExitMarker(side: side, cell: cell, spacing: spacing)
+                        
+                        //자동차들 배치
+                        ForEach(vm.cars.indices, id: \.self) { i in
+                            carView(
+                                for: vm.cars[i],
+                                index: i,
+                                cell: cell,
+                                origin: CGSize(width: gridOriginX, height: gridOriginY)
+                            )
+                        }
+                    }
+                    .frame(width: side, height: side)
+                    //보드판 위치 바꾸고 싶으면 여기서
+                    .position(x: geo.size.width / 2, y: geo.size.height / 2 - 30)
+                }
+            }
+            .padding()
+            // 승리 시 알림창
+            .alert("휴! 탈출이다", isPresented: $vm.hasWon) {
+                Button("다음 레벨로") {
+                    vm.moveToNextLevel()
                     resetDragState()
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(vm.moveCount == 0)
-                Spacer()
+                Button("종료하기", role: .cancel) {}
+            } message: {
+                Text("움직인 횟수: \(vm.moveCount)\n장애물 이동: \(vm.obstacleMoveCount)")
             }
-            
-            // 메인 게임 보드 영역
-            GeometryReader { geo in
-                // 화면 크기에 맞춰서 칸 크기(cell) 계산
-                let rawSide = min(geo.size.width, geo.size.height) - 8
-                let side = max(rawSide, 0)
-                let cell = side > 0 ? (side - spacing * CGFloat(cols - 1)) / CGFloat(cols) : 0
-                
-                // 그리드 전체 크기와 원점 계산
+            .onAppear {
+                // 화면이 켜지면 게임이 준비되었는지 확인
+                if vm.cars.isEmpty {
+                    vm.tryAgain()
+                }
+            }
+        }
+        
+        // MARK: - Helper Views
+        
+        // 출구 그리기
+        @ViewBuilder
+        func drawExitMarker(side: CGFloat, cell: CGFloat, spacing: CGFloat) -> some View {
+            switch vm.goalExitSide {
+            case .right:
                 let contentWidth  = cell * CGFloat(cols) + spacing * CGFloat(cols - 1)
                 let contentHeight = cell * CGFloat(rows) + spacing * CGFloat(rows - 1)
                 let gridOriginX = (side - contentWidth)  / 2
                 let gridOriginY = (side - contentHeight) / 2
+                let y = gridOriginY + CGFloat(rows / 2) * (cell + spacing)
                 
-                ZStack(alignment: .topLeading) {
-                    //배경 판 (연한 보라색)
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.purple.opacity(0.1))
-                        .frame(width: side, height: side)
-                    
-                    //그리드 칸 (더 연한 보라색)
-                    VStack(spacing: spacing) {
-                        ForEach(0..<rows, id: \.self) { _ in
-                            HStack(spacing: spacing) {
-                                ForEach(0..<cols, id: \.self) { _ in
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.purple.opacity(0.18))
-                                        .frame(width: cell, height: cell)
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(width: spacing * 2, height: cell)
+                    .overlay(
+                        Capsule()
+                            .fill(Color.orange)
+                            .frame(width: spacing * 2, height: cell * 0.6)
+                    )
+                    .position(x: gridOriginX + contentWidth + spacing, y: y + cell/2)
+            default:
+                EmptyView()
+            }
+        }
+        
+        // 자동차 그리기 및 드래그 로직
+        func carView(for car: Car, index: Int, cell: CGFloat, origin: CGSize) -> some View {
+            
+            let width  = car.horizontal
+            ? cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
+            : cell
+            let height = car.horizontal
+            ? cell
+            : cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
+            
+            // 차의 현재 위치 계산
+            let offsetX = origin.width  + CGFloat(car.col) * (cell + spacing)
+            let offsetY = origin.height + CGFloat(car.row) * (cell + spacing)
+            
+            // 드래그 중일 때 위치 변화
+            let currentDragX = (activeIndex == index) ? dragOffset.width : 0
+            let currentDragY = (activeIndex == index) ? dragOffset.height : 0
+            
+            // 흔들림 효과 (벽에 부딪혔을 때)
+            let shakeX = (activeIndex == index && car.horizontal) ? sin(shakePhase) * 5 : 0
+            let shakeY = (activeIndex == index && !car.horizontal) ? sin(shakePhase) * 5 : 0
+            
+            return RoundedRectangle(cornerRadius: 16)
+                .fill(car.color)
+                .frame(width: width, height: height)
+                .shadow(color: .black.opacity((activeIndex == index && isDragging) ? 0.1 : 0.3),
+                        radius: (activeIndex == index && isDragging) ? 5 : 2,
+                        x: 0, y: (activeIndex == index && isDragging) ? 5 : 2)
+                .overlay {
+                    if car.isGoal { Text("★").font(.largeTitle).foregroundColor(.white) }
+                }
+                .offset(x: offsetX + currentDragX + shakeX,
+                        y: offsetY + currentDragY + shakeY)
+                .zIndex(activeIndex == index ? 100 : 1) // 드래그 중인 차를 제일 위로
+                .animation(.spring(response: 0.35, dampingFraction: 0.75), value: dragOffset)
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            // 1. 드래그 시작 초기화
+                            if activeIndex == nil {
+                                activeIndex = index
+                                startRow = vm.cars[index].row
+                                startCol = vm.cars[index].col
+                                dragAxis = vm.cars[index].horizontal ? .horizontal : .vertical
+                                isDragging = true
+                            }
+                            guard activeIndex == index, let axis = dragAxis else { return }
+                            
+                            let step = cell + spacing
+                            
+                            // 2. 드래그한 거리 -> 몇 칸 움직이려 하는지 계산
+                            let translation = axis == .horizontal ? value.translation.width : value.translation.height
+                            let desiredSteps = Int(round(translation / step))
+                            
+                            // 3. 뷰모델에게 "이만큼 가도 돼?"라고 물어봄 (직접 계산 X)
+                            let allowedSteps = vm.calculateAllowedSteps(
+                                index: index,
+                                axis: axis,
+                                startRow: startRow,
+                                startCol: startCol,
+                                desiredDelta: desiredSteps
+                            )
+                            
+                            // 4. 실제 드래그 위치 업데이트
+                            if axis == .horizontal {
+                                dragOffset = CGSize(width: CGFloat(allowedSteps) * step, height: 0)
+                            } else {
+                                dragOffset = CGSize(width: 0, height: CGFloat(allowedSteps) * step)
+                            }
+                            
+                            // 5. 충돌 감지 (원하는 것보다 덜 움직였다면 벽에 막힌 것)
+                            let isBlocked = abs(desiredSteps) > abs(allowedSteps)
+                            
+                            // 6. 막혔다면 흔들림 효과
+                            if isBlocked && shakePhase == 0 {
+                                let generator = UIImpactFeedbackGenerator(style: .heavy)
+                                generator.impactOccurred()
+                                
+                                withAnimation(.linear(duration: 1)) { shakePhase = 20 }
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    var transaction = Transaction()
+                                    transaction.disablesAnimations = true
+                                    withTransaction(transaction) { shakePhase = 0 }
                                 }
                             }
                         }
-                    }
-                    .frame(width: side, height: side)
-                    
-                    //출구 표시 (Exit Marker)
-                    drawExitMarker(side: side, cell: cell, spacing: spacing)
-                    
-                    //자동차들 배치
-                    ForEach(vm.cars.indices, id: \.self) { i in
-                        carView(
-                            for: vm.cars[i],
-                            index: i,
-                            cell: cell,
-                            origin: CGSize(width: gridOriginX, height: gridOriginY)
-                        )
-                    }
-                }
-                .frame(width: side, height: side)
-                .position(x: geo.size.width / 2, y: geo.size.height / 2)
-            }
-        }
-        .padding()
-        // 승리 시 알림창
-        .alert("휴! 탈출이다", isPresented: $vm.hasWon) {
-            Button("다음 레벨로") {
-                vm.moveToNextLevel()
-                resetDragState()
-            }
-            Button("종료하기", role: .cancel) {}
-        } message: {
-            Text("움직인 횟수: \(vm.moveCount)\n장애물 이동: \(vm.obstacleMoveCount)")
-        }
-        .onAppear {
-            // 화면이 켜지면 게임이 준비되었는지 확인
-            if vm.cars.isEmpty {
-                vm.tryAgain()
-            }
-        }
-    }
-    
-    // MARK: - Helper Views
-    
-    // 출구 그리기
-    @ViewBuilder
-    func drawExitMarker(side: CGFloat, cell: CGFloat, spacing: CGFloat) -> some View {
-        switch vm.goalExitSide {
-        case .right:
-            let contentWidth  = cell * CGFloat(cols) + spacing * CGFloat(cols - 1)
-            let contentHeight = cell * CGFloat(rows) + spacing * CGFloat(rows - 1)
-            let gridOriginX = (side - contentWidth)  / 2
-            let gridOriginY = (side - contentHeight) / 2
-            let y = gridOriginY + CGFloat(rows / 2) * (cell + spacing)
-            
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: spacing * 2, height: cell)
-                .overlay(
-                    Capsule()
-                        .fill(Color.orange)
-                        .frame(width: spacing * 2, height: cell * 0.6)
-                )
-                .position(x: gridOriginX + contentWidth + spacing, y: y + cell/2)
-        default:
-            EmptyView()
-        }
-    }
-    
-    // 자동차 그리기 및 드래그 로직
-    func carView(for car: Car, index: Int, cell: CGFloat, origin: CGSize) -> some View {
-        
-        let width  = car.horizontal
-        ? cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
-        : cell
-        let height = car.horizontal
-        ? cell
-        : cell * CGFloat(car.length) + spacing * CGFloat(car.length - 1)
-        
-        // 차의 현재 위치 계산
-        let offsetX = origin.width  + CGFloat(car.col) * (cell + spacing)
-        let offsetY = origin.height + CGFloat(car.row) * (cell + spacing)
-        
-        // 드래그 중일 때 위치 변화
-        let currentDragX = (activeIndex == index) ? dragOffset.width : 0
-        let currentDragY = (activeIndex == index) ? dragOffset.height : 0
-        
-        // 흔들림 효과 (벽에 부딪혔을 때)
-        let shakeX = (activeIndex == index && car.horizontal) ? sin(shakePhase) * 5 : 0
-        let shakeY = (activeIndex == index && !car.horizontal) ? sin(shakePhase) * 5 : 0
-        
-        return RoundedRectangle(cornerRadius: 16)
-            .fill(car.color)
-            .frame(width: width, height: height)
-            .shadow(color: .black.opacity((activeIndex == index && isDragging) ? 0.1 : 0.3),
-                    radius: (activeIndex == index && isDragging) ? 5 : 2,
-                    x: 0, y: (activeIndex == index && isDragging) ? 5 : 2)
-            .overlay {
-                if car.isGoal { Text("★").font(.largeTitle).foregroundColor(.white) }
-            }
-            .offset(x: offsetX + currentDragX + shakeX,
-                    y: offsetY + currentDragY + shakeY)
-            .zIndex(activeIndex == index ? 100 : 1) // 드래그 중인 차를 제일 위로
-            .animation(.spring(response: 0.35, dampingFraction: 0.75), value: dragOffset)
-            .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        // 1. 드래그 시작 초기화
-                        if activeIndex == nil {
-                            activeIndex = index
-                            startRow = vm.cars[index].row
-                            startCol = vm.cars[index].col
-                            dragAxis = vm.cars[index].horizontal ? .horizontal : .vertical
-                            isDragging = true
-                        }
-                        guard activeIndex == index, let axis = dragAxis else { return }
-                        
-                        let step = cell + spacing
-                        
-                        // 2. 드래그한 거리 -> 몇 칸 움직이려 하는지 계산
-                        let translation = axis == .horizontal ? value.translation.width : value.translation.height
-                        let desiredSteps = Int(round(translation / step))
-                        
-                        // 3. 뷰모델에게 "이만큼 가도 돼?"라고 물어봄 (직접 계산 X)
-                        let allowedSteps = vm.calculateAllowedSteps(
-                            index: index,
-                            axis: axis,
-                            startRow: startRow,
-                            startCol: startCol,
-                            desiredDelta: desiredSteps
-                        )
-                        
-                        // 4. 실제 드래그 위치 업데이트
-                        if axis == .horizontal {
-                            dragOffset = CGSize(width: CGFloat(allowedSteps) * step, height: 0)
-                        } else {
-                            dragOffset = CGSize(width: 0, height: CGFloat(allowedSteps) * step)
-                        }
-                        
-                        // 5. 충돌 감지 (원하는 것보다 덜 움직였다면 벽에 막힌 것)
-                        let isBlocked = abs(desiredSteps) > abs(allowedSteps)
-                        
-                        // 6. 막혔다면 흔들림 효과
-                        if isBlocked && shakePhase == 0 {
-                            let generator = UIImpactFeedbackGenerator(style: .heavy)
-                            generator.impactOccurred()
+                        .onEnded { _ in
+                            guard activeIndex == index, let axis = dragAxis else { return }
                             
-                            withAnimation(.linear(duration: 1)) { shakePhase = 20 }
+                            let step = cell + spacing
+                            let movedSteps = Int(round((axis == .horizontal ? dragOffset.width : dragOffset.height) / step))
                             
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                var transaction = Transaction()
-                                transaction.disablesAnimations = true
-                                withTransaction(transaction) { shakePhase = 0 }
+                            if movedSteps != 0 {
+                                // 이동 확정: 모델 업데이트 요청
+                                let newRow = axis == .horizontal ? startRow : startRow + movedSteps
+                                let newCol = axis == .horizontal ? startCol + movedSteps : startCol
+                                
+                                // 로컬 데이터도 업데이트 (UI 즉각 반응용)
+                                if axis == .horizontal { vm.cars[index].col = newCol }
+                                else { vm.cars[index].row = newRow }
+                                
+                                vm.applyMove(from: startRow, startCol: startCol,
+                                             to: newRow, newCol: newCol,
+                                             isGoal: car.isGoal)
                             }
+                            resetDragState()
                         }
-                    }
-                    .onEnded { _ in
-                        guard activeIndex == index, let axis = dragAxis else { return }
-                        
-                        let step = cell + spacing
-                        let movedSteps = Int(round((axis == .horizontal ? dragOffset.width : dragOffset.height) / step))
-                        
-                        if movedSteps != 0 {
-                            // 이동 확정: 모델 업데이트 요청
-                            let newRow = axis == .horizontal ? startRow : startRow + movedSteps
-                            let newCol = axis == .horizontal ? startCol + movedSteps : startCol
-                            
-                            // 로컬 데이터도 업데이트 (UI 즉각 반응용)
-                            if axis == .horizontal { vm.cars[index].col = newCol }
-                            else { vm.cars[index].row = newRow }
-                            
-                            vm.applyMove(from: startRow, startCol: startCol,
-                                         to: newRow, newCol: newCol,
-                                         isGoal: car.isGoal)
-                        }
-                        resetDragState()
-                    }
-            )
+                )
+        }
+        
+        // 상태 초기화 함수
+        func resetDragState() {
+            activeIndex = nil
+            dragOffset = .zero
+            dragAxis = nil
+            isDragging = false
+            shakePhase = 0
+        }
     }
     
-    // 상태 초기화 함수
-    func resetDragState() {
-        activeIndex = nil
-        dragOffset = .zero
-        dragAxis = nil
-        isDragging = false
-        shakePhase = 0
+    struct ContentView_Previews: PreviewProvider {
+        static var previews: some View {
+            ContentView()
+        }
     }
-}
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
-    }
-}
