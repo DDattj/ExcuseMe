@@ -13,15 +13,7 @@ import SwiftUI
 extension Car {
     var color: Color {
         if isGoal {
-            //현재 GameData에 저장된 '장착 스킨 ID'를 가져오기
-            let skinID = GameData.shared.equippedSkin
-            //그 ID에 해당하는 아이템 정보를 찾기
-            if let item = ItemDatabase.findItem(id: skinID) {
-                //아이템의 색상 이름(resourceName)을 실제 색으로 바꿔서 반환
-                return ItemDatabase.color(forName: item.resourceName) // 내 캐릭터 색
-            }
-            return .red // 만약 못 찾으면 기본값
-            
+            return .red // 내 캐릭터 색
         } else {
             return horizontal ? .blue : .green // 장애물 색
             //여기 나중에 랜덤 컬러 불러오게 하려면 어떻게 하면 되는지 물어보기
@@ -40,6 +32,12 @@ struct ContentView: View {
     let rows = 6
     let cols = 6
     let spacing: CGFloat = 3
+    
+    //AppState 가져오기
+    @EnvironmentObject var appState: AppState
+    // 뒤로가기(Dismiss) 동작을 위한 변수
+    @Environment(\.dismiss) private var dismiss
+    @State private var showBackAlert = false
     
     // 뷰모델 연결
     @StateObject private var vm: GameViewModel
@@ -81,9 +79,10 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            if vm.cars.isEmpty {
-                // task에서 처리하므로 비워둬도 되지만, 안전장치로 둠
-            }
+            appState.isGamePlaying = true
+        }
+        .onDisappear {
+            appState.isGamePlaying = false
         }
         .navigationTitle("출근 \(vm.currentLevel)일차")
         .navigationBarTitleDisplayMode(.inline)
@@ -107,10 +106,12 @@ struct ContentView: View {
                         Image(systemName: "chevron.left")
                             .bold()
                         // 기본 버튼보다 살짝 얇을 수 있어서 볼드 처리
+
                     }
                 }
             }
         }
+        
         // 종료 확인 알림창
             .alert("게임을 종료할까요?", isPresented: $showExitAlert) {
                 Button("종료하기", role: .destructive) {
